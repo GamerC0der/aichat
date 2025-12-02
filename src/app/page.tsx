@@ -6,10 +6,19 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/moda
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(true)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[rgb(24,24,37)] font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-[rgb(24,24,37)] sm:items-start">
+    <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <button onClick={() => setIsSidebarOpen(false)} className="p-4 text-white hover:text-gray-300">
+          <img src="/favicon.ico" alt="Close" className="w-12 h-12" />
+        </button>
+      </aside>
+      <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
+        <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
+      </button>
+      <main className="flex-1 min-h-screen flex flex-col items-center justify-between py-32 px-16 bg-[rgb(24,24,37)] sm:items-start">
       </main>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
