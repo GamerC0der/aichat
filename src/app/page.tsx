@@ -7,7 +7,12 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(true)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [conversations] = useState([{ id: 1 }])
+  const [conversations, setConversations] = useState([{ id: 1 }])
+
+  const createNewConversation = () => {
+    const newId = Math.max(...conversations.map(c => c.id)) + 1
+    setConversations([...conversations, { id: newId }])
+  }
 
   return (
     <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
@@ -24,6 +29,9 @@ export default function Home() {
             ))}
           </div>
         </div>
+        <button onClick={createNewConversation} className="absolute bottom-4 left-4 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-150 hover:-translate-y-2 hover:translate-x-2">
+          +
+        </button>
       </aside>
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
