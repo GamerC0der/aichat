@@ -14,7 +14,7 @@ export default function Home() {
   const editInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
-  const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean}>>([])
+  const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean, isEcho?: boolean}>>([])
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
@@ -58,9 +58,21 @@ export default function Home() {
       const newMessage = {
         id: Date.now(),
         text: message,
-        isUser: true
+        isUser: true,
+        isEcho: false
       }
       setMessages(prev => [...prev, newMessage])
+
+      setTimeout(() => {
+        const echoResponse = {
+          id: Date.now() + 1,
+          text: message,
+          isUser: true,
+          isEcho: true
+        }
+        setMessages(prev => [...prev, echoResponse])
+      }, 500)
+
       console.log("Sending message:", message)
       setMessage("")
     }
@@ -152,37 +164,45 @@ export default function Home() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
-      <main className={`flex-1 min-h-screen flex flex-col items-center justify-between py-32 px-16 bg-[rgb(24,24,37)] sm:items-start relative ${isSidebarOpen ? 'ml-64' : ''}`}>
-        <div className="flex-1 w-full max-w-4xl space-y-4 overflow-y-auto pb-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-white ${
-                msg.isUser ? 'rounded-br-none' : 'rounded-bl-none'
-              }`}>
-                {msg.text}
-              </div>
+      <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${isSidebarOpen ? 'ml-64' : ''}`}>
+        <div className="flex-1 overflow-y-auto pb-32">
+          <div className="w-full flex justify-center">
+            <div className="w-[50%] py-8 px-4 space-y-6">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.isEcho ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] px-4 py-3 rounded-lg text-white border ${
+                    msg.isEcho 
+                      ? 'rounded-bl-none border-blue-500 bg-gray-800' 
+                      : 'rounded-br-none border-gray-600 bg-gray-700'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-4xl px-4">
-          <div className="relative">
-            <input
-              ref={messageInputRef}
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type your message..."
-              className="w-full px-4 py-3 pr-12 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
-            <button
-              onClick={sendMessage}
-              disabled={!message.trim()}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Send message"
-            >
-              ↑
-            </button>
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-8" style={{ paddingLeft: isSidebarOpen ? '16rem' : '0' }}>
+          <div className="w-[50%] px-4">
+            <div className="relative">
+              <input
+                ref={messageInputRef}
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Type your message..."
+                className="w-full px-4 py-3 pr-12 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!message.trim()}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Send message"
+              >
+                ↑
+              </button>
+            </div>
           </div>
         </div>
       </main>
