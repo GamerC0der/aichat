@@ -7,13 +7,23 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(true)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [conversations] = useState([{ id: 1 }])
 
   return (
     <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
       <aside className={`fixed left-0 top-0 h-full w-64 bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <button onClick={() => setIsSidebarOpen(false)} className="p-4 text-white hover:text-gray-300">
-          <img src="/favicon.ico" alt="Close" className="w-12 h-12" />
-        </button>
+        <div className="p-4">
+          <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-gray-300 mb-4">
+            <img src="/favicon.ico" alt="Close" className="w-12 h-12" />
+          </button>
+          <div className="space-y-2">
+            {conversations.map((convo) => (
+              <div key={convo.id} className="p-3 bg-gray-700 rounded text-white cursor-pointer hover:bg-gray-600">
+                New Convo
+              </div>
+            ))}
+          </div>
+        </div>
       </aside>
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
