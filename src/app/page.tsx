@@ -1,17 +1,53 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal"
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(true)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [conversations, setConversations] = useState([{ id: 1 }])
+  const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
+  const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const editInputRef = useRef<HTMLInputElement>(null)
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
-    setConversations([...conversations, { id: newId }])
+    setConversations([...conversations, { id: newId, title: "New Conversation" }])
+  }
+
+  const deleteConversation = (id: number) => {
+    setConversations(conversations.filter(c => c.id !== id))
+  }
+
+  const startEditing = (id: number, title: string) => {
+    setEditingId(id)
+    setEditTitle(title)
+    setMenuOpen(null)
+  }
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus()
+      editInputRef.current.select()
+    }
+  }, [editingId])
+
+  const saveEdit = () => {
+    if (editingId) {
+      setConversations(conversations.map(c =>
+        c.id === editingId ? { ...c, title: editTitle } : c
+      ))
+      setEditingId(null)
+      setEditTitle("")
+    }
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditTitle("")
   }
 
   return (
@@ -23,8 +59,65 @@ export default function Home() {
           </button>
           <div className="space-y-2">
             {conversations.map((convo) => (
-              <div key={convo.id} className="p-3 bg-gray-700 rounded text-white cursor-pointer hover:bg-gray-600">
-                New Convo
+              <div key={convo.id} className="group relative">
+                {editingId === convo.id ? (
+                  <div className="p-3 bg-gray-700 rounded flex items-center justify-between">
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit()
+                      }}
+                      onBlur={saveEdit}
+                      className="flex-1 bg-transparent text-white outline-none border-none p-0"
+                      placeholder="Conversation title"
+                    />
+                    <button
+                      onClick={saveEdit}
+                      className="-ml-1 p-1 text-green-400 hover:text-green-300"
+                      title="Save"
+                    >
+                      ✓
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-700 rounded text-white cursor-pointer hover:bg-gray-600 flex items-center justify-between">
+                    <span className="flex-1 truncate">{convo.title}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setMenuOpen(menuOpen === convo.id ? null : convo.id)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-600 rounded"
+                    >
+                      ⋮
+                    </button>
+                  </div>
+                )}
+                {menuOpen === convo.id && (
+                  <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg z-10 w-32">
+                    <button
+                      onClick={() => {
+                        startEditing(convo.id, convo.title)
+                        setMenuOpen(null)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 first:rounded-t last:rounded-b"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        deleteConversation(convo.id)
+                        setMenuOpen(null)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 first:rounded-t last:rounded-b"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
