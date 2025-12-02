@@ -12,6 +12,8 @@ export default function Home() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const editInputRef = useRef<HTMLInputElement>(null)
+  const [message, setMessage] = useState("")
+  const messageInputRef = useRef<HTMLInputElement>(null)
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
@@ -48,6 +50,20 @@ export default function Home() {
   const cancelEdit = () => {
     setEditingId(null)
     setEditTitle("")
+  }
+
+  const sendMessage = () => {
+    if (message.trim()) {
+      console.log("Sending message:", message)
+      setMessage("")
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
   }
 
   return (
@@ -129,7 +145,29 @@ export default function Home() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
-      <main className="flex-1 min-h-screen flex flex-col items-center justify-between py-32 px-16 bg-[rgb(24,24,37)] sm:items-start">
+      <main className={`flex-1 min-h-screen flex flex-col items-center justify-between py-32 px-16 bg-[rgb(24,24,37)] sm:items-start relative ${isSidebarOpen ? 'ml-64' : ''}`}>
+        <div className="flex-1"></div>
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-4xl px-4">
+          <div className="relative">
+            <input
+              ref={messageInputRef}
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Type your message..."
+              className="w-full px-4 py-3 pr-12 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!message.trim()}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Send message"
+            >
+              ↑
+            </button>
+          </div>
+        </div>
       </main>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
