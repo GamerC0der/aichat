@@ -14,6 +14,7 @@ export default function Home() {
   const editInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
+  const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean}>>([])
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
@@ -54,6 +55,12 @@ export default function Home() {
 
   const sendMessage = () => {
     if (message.trim()) {
+      const newMessage = {
+        id: Date.now(),
+        text: message,
+        isUser: true
+      }
+      setMessages(prev => [...prev, newMessage])
       console.log("Sending message:", message)
       setMessage("")
     }
@@ -146,7 +153,17 @@ export default function Home() {
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
       <main className={`flex-1 min-h-screen flex flex-col items-center justify-between py-32 px-16 bg-[rgb(24,24,37)] sm:items-start relative ${isSidebarOpen ? 'ml-64' : ''}`}>
-        <div className="flex-1"></div>
+        <div className="flex-1 w-full max-w-4xl space-y-4 overflow-y-auto pb-4">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-white ${
+                msg.isUser ? 'rounded-br-none' : 'rounded-bl-none'
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-4xl px-4">
           <div className="relative">
             <input
