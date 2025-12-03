@@ -91,15 +91,17 @@ export default function Home() {
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
   const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean}>>([])
-  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3">("Gemini")
+  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
   const [isLoading, setIsLoading] = useState(false)
+  const [showAllModels, setShowAllModels] = useState(false)
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
       "Gemini": "google/gemini-2.5-flash",
       "GPT 5": "openai/gpt-5-mini",
       "Grok": "x-ai/grok-4.1-fast",
-      "Gemini 3": "google/gemini-3-pro-preview"
+      "Gemini 3": "google/gemini-3-pro-preview",
+      "Kimi": "moonshotai/kimi-k2-0905"
     }
     return modelMap[model] || modelMap["Gemini"]
   }
@@ -319,7 +321,11 @@ export default function Home() {
       </button>
       <div className={`fixed top-4 z-10 ${isSidebarOpen ? 'left-68' : 'left-4'}`}>
         <Select value={selectedModel} onValueChange={(value) => {
-          const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3"
+          if (value === "view-more") {
+            setShowAllModels(!showAllModels)
+            return
+          }
+          const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
           setSelectedModel(model)
           console.log("Model changed to:", model)
         }}>
@@ -331,6 +337,7 @@ export default function Home() {
             <SelectItem value="GPT 5">GPT 5</SelectItem>
             <SelectItem value="Grok">Grok</SelectItem>
             <SelectItem value="Gemini 3">Gemini 3</SelectItem>
+            <SelectItem value="Kimi">Kimi</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -431,6 +438,7 @@ export default function Home() {
           )}
         </ModalFooter>
       </Modal>
+
     </div>
   );
 }
