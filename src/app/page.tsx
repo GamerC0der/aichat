@@ -21,8 +21,19 @@ export default function Home() {
   const editInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
-  const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean, isEcho?: boolean}>>([])
+  const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean}>>([])
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3">("Gemini")
+  const [isLoading, setIsLoading] = useState(false)
+
+  const getModelId = (model: string) => {
+    const modelMap: Record<string, string> = {
+      "Gemini": "google/gemini-2.5-flash",
+      "GPT 5": "openai/gpt-5-mini",
+      "Grok": "x-ai/grok-4.1-fast",
+      "Gemini 3": "google/gemini-3-pro-preview"
+    }
+    return modelMap[model] || modelMap["Gemini"]
+  }
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
@@ -61,28 +72,93 @@ export default function Home() {
     setEditTitle("")
   }
 
-  const sendMessage = () => {
-    if (message.trim()) {
-      const newMessage = {
+  const sendMessage = async () => {
+    if (message.trim() && !isLoading) {
+      const userMessage = {
         id: Date.now(),
         text: message,
-        isUser: true,
-        isEcho: false
+        isUser: true
       }
-      setMessages(prev => [...prev, newMessage])
-
-      setTimeout(() => {
-        const echoResponse = {
-          id: Date.now() + 1,
-          text: message,
-          isUser: true,
-          isEcho: true
-        }
-        setMessages(prev => [...prev, echoResponse])
-      }, 500)
-
-      console.log("Sending message:", message)
+      setMessages(prev => [...prev, userMessage])
+      const currentMessage = message
       setMessage("")
+      setIsLoading(true)
+
+      const assistantMessageId = Date.now() + 1
+      const assistantMessage = {
+        id: assistantMessageId,
+        text: "",
+        isUser: false
+      }
+      setMessages(prev => [...prev, assistantMessage])
+
+      try {
+        const modelId = getModelId(selectedModel)
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: [
+              ...messages.map(m => ({
+                role: m.isUser ? "user" : "assistant",
+                content: m.text
+              })),
+              { role: "user", content: currentMessage }
+            ],
+            stream: true
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (reader) {
+          let buffer = ""
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split("\n")
+            buffer = lines.pop() || ""
+
+            for (const line of lines) {
+              if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                try {
+                  const data = JSON.parse(line.slice(6))
+                  const content = data.choices?.[0]?.delta?.content
+                  if (content) {
+                    setMessages(prev => prev.map(m =>
+                      m.id === assistantMessageId
+                        ? { ...m, text: m.text + content }
+                        : m
+                    ))
+                  }
+                } catch (e) {
+                  console.error("Error parsing stream:", e)
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error sending message:", error)
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessageId
+            ? { ...m, text: "Error: Failed to get response. Please check your API key." }
+            : m
+        ))
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -194,13 +270,13 @@ export default function Home() {
           <div className="w-full flex justify-center">
             <div className="w-[50%] py-8 px-4 space-y-6">
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.isEcho ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] px-4 py-3 rounded-lg text-white border ${
-                    msg.isEcho 
+                    msg.isUser 
                       ? 'rounded-bl-none border-blue-500 bg-gray-800' 
                       : 'rounded-br-none border-gray-600 bg-gray-700'
                   }`}>
-                    {msg.text}
+                    {msg.text || (msg.isUser ? "" : "Thinking...")}
                   </div>
                 </div>
               ))}
@@ -221,7 +297,7 @@ export default function Home() {
               />
               <button
                 onClick={sendMessage}
-                disabled={!message.trim()}
+                disabled={!message.trim() || isLoading}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Send message"
               >
