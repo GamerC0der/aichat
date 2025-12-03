@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Settings } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -379,6 +380,14 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="fixed bottom-4 right-4 w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-full flex items-center justify-center transition-colors z-20"
+        title="Settings"
+      >
+        <Settings size={20} />
+      </button>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <ModalHeader>
