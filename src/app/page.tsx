@@ -10,6 +10,65 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+const parseMarkdown = (text: string): string => {
+  if (!text || text === "Thinking...") return text
+
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+
+  html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
+    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return `<pre><code>${escaped}</code></pre>`
+  })
+
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
+
+  const lines = html.split('\n')
+  let result = ''
+  let inList = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    if (/^### /.test(line)) {
+      if (inList) { result += '</ul>'; inList = false }
+      result += line.replace(/^### (.*)$/, '<h3>$1</h3>')
+    } else if (/^## /.test(line)) {
+      if (inList) { result += '</ul>'; inList = false }
+      result += line.replace(/^## (.*)$/, '<h2>$1</h2>')
+    } else if (/^# /.test(line)) {
+      if (inList) { result += '</ul>'; inList = false }
+      result += line.replace(/^# (.*)$/, '<h1>$1</h1>')
+    } else if (/^\d+\. /.test(line)) {
+      if (!inList) { result += '<ol>'; inList = true }
+      result += line.replace(/^\d+\. (.*)$/, '<li>$1</li>')
+    } else if (/^[-*] /.test(line)) {
+      if (!inList) { result += '<ul>'; inList = true }
+      result += line.replace(/^[-*] (.*)$/, '<li>$1</li>')
+    } else {
+      if (inList) { result += '</ul>'; inList = false }
+      if (line.trim() === '') {
+        result += '</p><p>'
+      } else {
+        result += line + ' '
+      }
+    }
+  }
+
+  if (inList) result += '</ul>'
+
+  result = '<p>' + result.trim() + '</p>'
+  result = result.replace(/<p><\/p>/g, '')
+  result = result.replace(/<p>(<h[1-3]>.*<\/h[1-3]>)<\/p>/g, '$1')
+  result = result.replace(/<p>(<[uo]l>.*<\/[uo]l>)<\/p>/g, '$1')
+
+  return result
+}
+
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(true)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
@@ -272,11 +331,15 @@ export default function Home() {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] px-4 py-3 rounded-lg text-white border ${
-                    msg.isUser 
-                      ? 'rounded-bl-none border-blue-500 bg-gray-800' 
+                    msg.isUser
+                      ? 'rounded-bl-none border-blue-500 bg-gray-800'
                       : 'rounded-br-none border-gray-600 bg-gray-700'
                   }`}>
-                    {msg.text || (msg.isUser ? "" : "Thinking...")}
+                    {msg.isUser ? (
+                      msg.text
+                    ) : (
+                      <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text || "Thinking...") }} />
+                    )}
                   </div>
                 </div>
               ))}
