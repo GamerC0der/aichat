@@ -70,8 +70,17 @@ const parseMarkdown = (text: string): string => {
 }
 
 export default function Home() {
-  const [isModalOpen, setIsModalOpen] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem("apiKey")
+    if (savedKey) {
+      setApiKey(savedKey)
+    } else {
+      setIsModalOpen(true)
+    }
+  }, [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
@@ -402,7 +411,10 @@ export default function Home() {
         <ModalFooter>
           {apiKey.length > 8 && (
             <button
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => {
+                localStorage.setItem("apiKey", apiKey)
+                setIsModalOpen(false)
+              }}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
               Save
