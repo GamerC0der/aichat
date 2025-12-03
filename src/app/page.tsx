@@ -72,14 +72,21 @@ const parseMarkdown = (text: string): string => {
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isInitialSetup, setIsInitialSetup] = useState(false)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
+  const [systemPrompt, setSystemPrompt] = useState("")
 
   useEffect(() => {
     const savedKey = localStorage.getItem("apiKey")
+    const savedPrompt = localStorage.getItem("systemPrompt")
     if (savedKey) {
       setApiKey(savedKey)
     } else {
       setIsModalOpen(true)
+      setIsInitialSetup(true)
+    }
+    if (savedPrompt) {
+      setSystemPrompt(savedPrompt)
     }
   }, [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -174,6 +181,7 @@ export default function Home() {
           body: JSON.stringify({
             model: modelId,
             messages: [
+              ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
               ...messages.map(m => ({
                 role: m.isUser ? "user" : "assistant",
                 content: m.text
@@ -389,16 +397,22 @@ export default function Home() {
       </main>
 
       <button
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => {
+          setIsModalOpen(true)
+          setIsInitialSetup(false)
+        }}
         className="fixed bottom-4 right-4 w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-full flex items-center justify-center transition-colors z-20"
         title="Settings"
       >
         <Settings size={20} />
       </button>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal isOpen={isModalOpen} onClose={() => {
+        setIsModalOpen(false)
+        setIsInitialSetup(false)
+      }}>
         <ModalHeader>
-          <h2 className="text-lg font-semibold">Set API Key</h2>
+          <h2 className="text-lg font-semibold">{isInitialSetup ? "Set API Key" : "Settings"}</h2>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
@@ -422,6 +436,21 @@ export default function Home() {
                 P.S: You can obtain the key at ai.hackclub.com
               </p>
             </div>
+            {!isInitialSetup && (
+              <div>
+                <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+                  System Prompt (Optional)
+                </label>
+                <textarea
+                  id="systemPrompt"
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  placeholder="Enter a custom system prompt..."
+                  rows={4}
+                  className="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                />
+              </div>
+            )}
           </div>
         </ModalBody>
         <ModalFooter>
@@ -429,6 +458,7 @@ export default function Home() {
             <button
               onClick={() => {
                 localStorage.setItem("apiKey", apiKey)
+                localStorage.setItem("systemPrompt", systemPrompt)
                 setIsModalOpen(false)
               }}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
