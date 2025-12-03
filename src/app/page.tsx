@@ -22,7 +22,7 @@ export default function Home() {
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
   const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean, isEcho?: boolean}>>([])
-  const [selectedModel, setSelectedModel] = useState<"Instant" | "Pro">("Instant")
+  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3">("Gemini")
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
@@ -173,13 +173,19 @@ export default function Home() {
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
       <div className={`fixed top-4 z-10 ${isSidebarOpen ? 'left-68' : 'left-4'}`}>
-        <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as "Instant" | "Pro")}>
-          <SelectTrigger className="w-[120px]">
+        <Select value={selectedModel} onValueChange={(value) => {
+          const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3"
+          setSelectedModel(model)
+          console.log("Model changed to:", model)
+        }}>
+          <SelectTrigger className="w-[220px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Instant">Instant</SelectItem>
-            <SelectItem value="Pro">Pro</SelectItem>
+            <SelectItem value="Gemini">Gemini</SelectItem>
+            <SelectItem value="GPT 5">GPT 5</SelectItem>
+            <SelectItem value="Grok">Grok</SelectItem>
+            <SelectItem value="Gemini 3">Gemini 3</SelectItem>
           </SelectContent>
         </Select>
       </div>

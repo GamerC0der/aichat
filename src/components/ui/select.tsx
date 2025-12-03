@@ -57,16 +57,16 @@ const SelectTrigger: React.FC<SelectTriggerProps> = ({ children, className }) =>
       type="button"
       onClick={() => setIsOpen(!isOpen)}
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white whitespace-nowrap ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
     >
-      <span className="truncate">
+      <span className="truncate flex-1 text-left">
         {React.Children.toArray(children).find(
           (child) => React.isValidElement(child) && child.props.value === value
         ) || children}
       </span>
-      <ChevronDown className={cn("h-4 w-4 opacity-50 transition-transform", isOpen && "rotate-180")} />
+      <ChevronDown className={cn("h-4 w-4 opacity-50 transition-transform flex-shrink-0", isOpen && "rotate-180")} />
     </button>
   )
 }
