@@ -2,6 +2,13 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(true)
@@ -15,6 +22,7 @@ export default function Home() {
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
   const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean, isEcho?: boolean}>>([])
+  const [selectedModel, setSelectedModel] = useState<"Instant" | "Pro">("Instant")
 
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
@@ -164,6 +172,17 @@ export default function Home() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
+      <div className={`fixed top-4 z-10 ${isSidebarOpen ? 'left-68' : 'left-4'}`}>
+        <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as "Instant" | "Pro")}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Instant">Instant</SelectItem>
+            <SelectItem value="Pro">Pro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${isSidebarOpen ? 'ml-64' : ''}`}>
         <div className="flex-1 overflow-y-auto pb-32">
           <div className="w-full flex justify-center">
