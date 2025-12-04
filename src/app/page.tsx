@@ -91,13 +91,14 @@ export default function Home() {
   }, [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
+  const [currentConversationId, setCurrentConversationId] = useState(1)
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const editInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
-  const [messages, setMessages] = useState<Array<{id: number, text: string, isUser: boolean}>>([])
+  const [conversationMessages, setConversationMessages] = useState<Record<number, Array<{id: number, text: string, isUser: boolean}>>>({1: []})
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
@@ -116,10 +117,29 @@ export default function Home() {
   const createNewConversation = () => {
     const newId = Math.max(...conversations.map(c => c.id)) + 1
     setConversations([...conversations, { id: newId, title: "New Conversation" }])
+    setCurrentConversationId(newId)
+    setConversationMessages(prev => ({ ...prev, [newId]: [] }))
+    setMessage("")
+  }
+
+  const switchConversation = (id: number) => {
+    setCurrentConversationId(id)
+    setMessage("")
   }
 
   const deleteConversation = (id: number) => {
     setConversations(conversations.filter(c => c.id !== id))
+    setConversationMessages(prev => {
+      const newMessages = { ...prev }
+      delete newMessages[id]
+      return newMessages
+    })
+    if (currentConversationId === id) {
+      const remaining = conversations.filter(c => c.id !== id)
+      if (remaining.length > 0) {
+        setCurrentConversationId(remaining[0].id)
+      }
+    }
   }
 
   const startEditing = (id: number, title: string) => {
@@ -157,7 +177,10 @@ export default function Home() {
         text: message,
         isUser: true
       }
-      setMessages(prev => [...prev, userMessage])
+      setConversationMessages(prev => ({
+        ...prev,
+        [currentConversationId]: [...(prev[currentConversationId] || []), userMessage]
+      }))
       const currentMessage = message
       setMessage("")
       setIsLoading(true)
@@ -168,10 +191,14 @@ export default function Home() {
         text: "",
         isUser: false
       }
-      setMessages(prev => [...prev, assistantMessage])
+      setConversationMessages(prev => ({
+        ...prev,
+        [currentConversationId]: [...(prev[currentConversationId] || []), assistantMessage]
+      }))
 
       try {
         const modelId = getModelId(selectedModel)
+        const currentMessages = conversationMessages[currentConversationId] || []
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
@@ -182,7 +209,7 @@ export default function Home() {
             model: modelId,
             messages: [
               ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-              ...messages.map(m => ({
+              ...currentMessages.map(m => ({
                 role: m.isUser ? "user" : "assistant",
                 content: m.text
               })),
@@ -215,11 +242,14 @@ export default function Home() {
                   const data = JSON.parse(line.slice(6))
                   const content = data.choices?.[0]?.delta?.content
                   if (content) {
-                    setMessages(prev => prev.map(m =>
-                      m.id === assistantMessageId
-                        ? { ...m, text: m.text + content }
-                        : m
-                    ))
+                    setConversationMessages(prev => ({
+                      ...prev,
+                      [currentConversationId]: prev[currentConversationId].map(m =>
+                        m.id === assistantMessageId
+                          ? { ...m, text: m.text + content }
+                          : m
+                      )
+                    }))
                   }
                 } catch (e) {
                   console.error("Error parsing stream:", e)
@@ -230,11 +260,14 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Error sending message:", error)
-        setMessages(prev => prev.map(m =>
-          m.id === assistantMessageId
-            ? { ...m, text: "Error: Failed to get response. Please check your API key." }
-            : m
-        ))
+        setConversationMessages(prev => ({
+          ...prev,
+          [currentConversationId]: prev[currentConversationId].map(m =>
+            m.id === assistantMessageId
+              ? { ...m, text: "Error: Failed to get response. Please check your API key." }
+              : m
+          )
+        }))
       } finally {
         setIsLoading(false)
       }
@@ -281,7 +314,12 @@ export default function Home() {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3 bg-gray-700 rounded text-white cursor-pointer hover:bg-gray-600 flex items-center justify-between">
+                  <div
+                    className={`p-3 rounded text-white cursor-pointer hover:bg-gray-600 flex items-center justify-between group ${
+                      convo.id === currentConversationId ? 'bg-gray-600' : 'bg-gray-700'
+                    }`}
+                    onClick={() => switchConversation(convo.id)}
+                  >
                     <span className="flex-1 truncate">{convo.title}</span>
                     <button
                       onClick={(e) => {
@@ -320,9 +358,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-        <button onClick={createNewConversation} className="absolute bottom-4 left-4 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-150 hover:-translate-y-2 hover:translate-x-2">
-          +
-        </button>
       </aside>
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
@@ -349,11 +384,14 @@ export default function Home() {
           </SelectContent>
         </Select>
       </div>
+      <button onClick={createNewConversation} className={`fixed top-4 z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 ${isSidebarOpen ? 'right-4' : 'right-4'}`}>
+        +
+      </button>
       <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${isSidebarOpen ? 'ml-64' : ''}`}>
         <div className="flex-1 overflow-y-auto pb-32">
           <div className="w-full flex justify-center">
             <div className="w-[50%] py-8 px-4 space-y-6">
-              {messages.map((msg) => (
+              {(conversationMessages[currentConversationId] || []).map((msg) => (
                 <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] px-4 py-3 rounded-lg text-white border ${
                     msg.isUser
