@@ -79,6 +79,9 @@ export default function Home() {
   useEffect(() => {
     const savedKey = localStorage.getItem("apiKey")
     const savedPrompt = localStorage.getItem("systemPrompt")
+    const savedConversations = localStorage.getItem("conversations")
+    const savedMessages = localStorage.getItem("conversationMessages")
+
     if (savedKey) {
       setApiKey(savedKey)
     } else {
@@ -87,6 +90,16 @@ export default function Home() {
     }
     if (savedPrompt) {
       setSystemPrompt(savedPrompt)
+    }
+    if (savedConversations) {
+      const parsedConversations = JSON.parse(savedConversations)
+      setConversations(parsedConversations)
+      if (parsedConversations.length > 0) {
+        setCurrentConversationId(parsedConversations[0].id)
+      }
+    }
+    if (savedMessages) {
+      setConversationMessages(JSON.parse(savedMessages))
     }
   }, [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -102,6 +115,14 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem("conversations", JSON.stringify(conversations))
+  }, [conversations])
+
+  useEffect(() => {
+    localStorage.setItem("conversationMessages", JSON.stringify(conversationMessages))
+  }, [conversationMessages])
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
