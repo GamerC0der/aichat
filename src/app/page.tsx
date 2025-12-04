@@ -191,8 +191,47 @@ export default function Home() {
     setEditTitle("")
   }
 
+  const generateTitleFromFirstMessage = async (firstMessage: string) => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "z-ai/glm-4.6",
+          messages: [
+            {
+              role: "system",
+              content: "Generate a concise, descriptive title (max 2 words) for this conversation based on the user's first message. Return only the title, nothing else."
+            },
+            {
+              role: "user",
+              content: firstMessage
+            }
+          ],
+          stream: false
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const title = data.choices?.[0]?.message?.content?.trim()
+        if (title && title.length > 0 && title.length <= 50) {
+          setConversations(prev => prev.map(c =>
+            c.id === currentConversationId ? { ...c, title } : c
+          ))
+        }
+      }
+    } catch (error) {
+      console.error("Error generating title:", error)
+    }
+  }
+
   const sendMessage = async () => {
     if (message.trim() && !isLoading) {
+      const isFirstMessage = (conversationMessages[currentConversationId] || []).length === 0
       const userMessage = {
         id: Date.now(),
         text: message,
@@ -205,6 +244,11 @@ export default function Home() {
       const currentMessage = message
       setMessage("")
       setIsLoading(true)
+
+      // Generate title from first message
+      if (isFirstMessage) {
+        generateTitleFromFirstMessage(currentMessage)
+      }
 
       const assistantMessageId = Date.now() + 1
       const assistantMessage = {
