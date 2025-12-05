@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2 } from "lucide-react"
+import { Settings, Volume2, Loader2 } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -116,6 +116,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
   const [ttsEnabled, setTtsEnabled] = useState(true)
+  const [isTtsLoading, setIsTtsLoading] = useState(false)
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -236,6 +237,7 @@ export default function Home() {
 
   const speakMessage = async (text: string) => {
     if (text && text !== "Thinking...") {
+      setIsTtsLoading(true)
       try {
         const params = new URLSearchParams({
           input: text,
@@ -253,18 +255,28 @@ export default function Home() {
           const audioBlob = await response.blob()
           const audioUrl = URL.createObjectURL(audioBlob)
           const audio = new Audio(audioUrl)
+          audio.onplay = () => setIsTtsLoading(false)
+          audio.onerror = () => setIsTtsLoading(false)
           audio.play()
         } else {
           if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text)
+            utterance.onstart = () => setIsTtsLoading(false)
+            utterance.onerror = () => setIsTtsLoading(false)
             speechSynthesis.speak(utterance)
+          } else {
+            setIsTtsLoading(false)
           }
         }
       } catch (error) {
         console.error("TTS error:", error)
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(text)
+          utterance.onstart = () => setIsTtsLoading(false)
+          utterance.onerror = () => setIsTtsLoading(false)
           speechSynthesis.speak(utterance)
+        } else {
+          setIsTtsLoading(false)
         }
       }
     }
@@ -515,10 +527,15 @@ export default function Home() {
                     {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
                       <button
                         onClick={() => speakMessage(msg.text)}
-                        className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors"
-                        title="Speak message"
+                        disabled={isTtsLoading}
+                        className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={isTtsLoading ? "Generating speech..." : "Speak message"}
                       >
-                        <Volume2 size={14} />
+                        {isTtsLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Volume2 size={14} />
+                        )}
                       </button>
                     )}
                   </div>
