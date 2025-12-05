@@ -557,6 +557,20 @@ export default function Home() {
           </div>
         </ModalBody>
         <ModalFooter>
+          {!isInitialSetup && (
+            <button
+              onClick={() => {
+                setConversations([{ id: 1, title: "New Conversation" }])
+                setConversationMessages({1: []})
+                setCurrentConversationId(1)
+                setMessage("")
+                setIsModalOpen(false)
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 mr-2"
+            >
+              Clear Chats
+            </button>
+          )}
           {apiKey.length > 8 && (
             <button
               onClick={() => {
