@@ -229,6 +229,10 @@ export default function Home() {
     }
   }
 
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
   const sendMessage = async () => {
     if (message.trim() && !isLoading) {
       const isFirstMessage = (conversationMessages[currentConversationId] || []).length === 0
@@ -457,7 +461,7 @@ export default function Home() {
           <div className="w-full flex justify-center">
             <div className="w-[50%] py-8 px-4 space-y-6">
               {(conversationMessages[currentConversationId] || []).map((msg) => (
-                <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
                   <div className={`max-w-[80%] px-4 py-3 rounded-lg text-white border ${
                     msg.isUser
                       ? 'rounded-bl-none border-blue-500 bg-gray-800'
@@ -468,6 +472,9 @@ export default function Home() {
                     ) : (
                       <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text || "Thinking...") }} />
                     )}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1 px-2">
+                    {formatTime(msg.id)}
                   </div>
                 </div>
               ))}
