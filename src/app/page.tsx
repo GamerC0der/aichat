@@ -234,10 +234,39 @@ export default function Home() {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
-  const speakMessage = (text: string) => {
-    if ('speechSynthesis' in window && text && text !== "Thinking...") {
-      const utterance = new SpeechSynthesisUtterance(text)
-      speechSynthesis.speak(utterance)
+  const speakMessage = async (text: string) => {
+    if (text && text !== "Thinking...") {
+      try {
+        const params = new URLSearchParams({
+          input: text,
+          model: "tts-1",
+          voice: "alloy",
+          response_format: "mp3",
+          prompt: "Speak in a natural, conversational tone."
+        })
+
+        const response = await fetch(`/api/tts?${params}`, {
+          method: "GET"
+        })
+
+        if (response.ok) {
+          const audioBlob = await response.blob()
+          const audioUrl = URL.createObjectURL(audioBlob)
+          const audio = new Audio(audioUrl)
+          audio.play()
+        } else {
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text)
+            speechSynthesis.speak(utterance)
+          }
+        }
+      } catch (error) {
+        console.error("TTS error:", error)
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text)
+          speechSynthesis.speak(utterance)
+        }
+      }
     }
   }
 
