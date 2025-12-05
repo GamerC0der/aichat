@@ -474,8 +474,13 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-8" style={{ paddingLeft: isSidebarOpen ? '16rem' : '0' }}>
+        <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: isSidebarOpen ? '16rem' : '0' }}>
           <div className="w-[50%] px-4">
+            {(conversationMessages[currentConversationId] || []).length === 0 && (
+              <div className="text-center text-white text-6xl mb-4">
+                Hi, I'm {selectedModel}!
+              </div>
+            )}
             <div className="relative">
               <input
                 ref={messageInputRef}
