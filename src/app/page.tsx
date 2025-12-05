@@ -115,6 +115,7 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
+  const [ttsEnabled, setTtsEnabled] = useState(true)
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -123,6 +124,18 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("conversationMessages", JSON.stringify(conversationMessages))
   }, [conversationMessages])
+
+  useEffect(() => {
+    if (ttsEnabled && 'speechSynthesis' in window) {
+      const currentMessages = conversationMessages[currentConversationId] || []
+      const lastMessage = currentMessages[currentMessages.length - 1]
+
+      if (lastMessage && !lastMessage.isUser && lastMessage.text && lastMessage.text !== "Thinking...") {
+        const utterance = new SpeechSynthesisUtterance(lastMessage.text)
+        speechSynthesis.speak(utterance)
+      }
+    }
+  }, [conversationMessages, currentConversationId, ttsEnabled])
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
@@ -552,19 +565,33 @@ export default function Home() {
               </p>
             </div>
             {!isInitialSetup && (
-              <div>
-                <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 mb-2">
-                  System Prompt (Optional)
-                </label>
-                <textarea
-                  id="systemPrompt"
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
-                  placeholder="Enter a custom system prompt..."
-                  rows={4}
-                  className="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-                />
-              </div>
+              <>
+                <div>
+                  <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+                    System Prompt (Optional)
+                  </label>
+                  <textarea
+                    id="systemPrompt"
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
+                    placeholder="Enter a custom system prompt..."
+                    rows={4}
+                    className="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="tts"
+                    type="checkbox"
+                    checked={ttsEnabled}
+                    onChange={(e) => setTtsEnabled(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <label htmlFor="tts" className="text-sm font-medium text-gray-700">
+                    Enable Text-to-Speech
+                  </label>
+                </div>
+              </>
             )}
           </div>
         </ModalBody>
