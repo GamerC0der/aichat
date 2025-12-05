@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings } from "lucide-react"
+import { Settings, Volume2 } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -125,18 +125,6 @@ export default function Home() {
     localStorage.setItem("conversationMessages", JSON.stringify(conversationMessages))
   }, [conversationMessages])
 
-  useEffect(() => {
-    if (ttsEnabled && 'speechSynthesis' in window) {
-      const currentMessages = conversationMessages[currentConversationId] || []
-      const lastMessage = currentMessages[currentMessages.length - 1]
-
-      if (lastMessage && !lastMessage.isUser && lastMessage.text && lastMessage.text !== "Thinking...") {
-        const utterance = new SpeechSynthesisUtterance(lastMessage.text)
-        speechSynthesis.speak(utterance)
-      }
-    }
-  }, [conversationMessages, currentConversationId, ttsEnabled])
-
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
       "Gemini": "google/gemini-2.5-flash",
@@ -244,6 +232,13 @@ export default function Home() {
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const speakMessage = (text: string) => {
+    if ('speechSynthesis' in window && text && text !== "Thinking...") {
+      const utterance = new SpeechSynthesisUtterance(text)
+      speechSynthesis.speak(utterance)
+    }
   }
 
   const sendMessage = async () => {
@@ -486,8 +481,17 @@ export default function Home() {
                       <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text || "Thinking...") }} />
                     )}
                   </div>
-                  <div className="text-xs text-gray-400 mt-1 px-2">
-                    {formatTime(msg.id)}
+                  <div className="flex items-center text-xs text-gray-400 mt-1 px-2">
+                    <span>{formatTime(msg.id)}</span>
+                    {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
+                      <button
+                        onClick={() => speakMessage(msg.text)}
+                        className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors"
+                        title="Speak message"
+                      >
+                        <Volume2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
