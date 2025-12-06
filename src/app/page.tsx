@@ -799,16 +799,6 @@ export default function Home() {
                   </div>
                   <div className="flex items-center text-xs text-gray-400 mt-1 px-2">
                     <span>{formatTime(msg.id)}</span>
-                    {msg.isUser && (
-                      <button
-                        onClick={() => retryMessage(msg.id)}
-                        disabled={isLoading}
-                        className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Retry message"
-                      >
-                        <RefreshCw size={14} />
-                      </button>
-                    )}
                     {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
                       <>
                         <button
@@ -866,6 +856,27 @@ export default function Home() {
                 ↑
               </button>
             </div>
+            {(conversationMessages[currentConversationId] || []).length === 0 && (
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => setSystemPrompt("You are an expert programmer. Provide clean, efficient, and well-documented code solutions.")}
+                  disabled={isLoading}
+                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Coder
+                </button>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(true)
+                    setIsInitialSetup(false)
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Reset Key
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>
