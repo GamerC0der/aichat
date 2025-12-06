@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal"
 import {
   Select,
@@ -71,6 +72,7 @@ const parseMarkdown = (text: string): string => {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isInitialSetup, setIsInitialSetup] = useState(false)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
@@ -859,7 +861,7 @@ export default function Home() {
             {(conversationMessages[currentConversationId] || []).length === 0 && (
               <div className="flex gap-2 mt-2">
                 <button
-                  onClick={() => setSystemPrompt("You are an expert programmer. Provide clean, efficient, and well-documented code solutions.")}
+                  onClick={() => router.push("/coder")}
                   disabled={isLoading}
                   className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
