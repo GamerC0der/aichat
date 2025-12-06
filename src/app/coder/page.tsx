@@ -44,6 +44,7 @@ export default function CoderPage() {
   }, [])
 
   useEffect(() => {
+    const savedConversations = localStorage.getItem("conversations")
     const savedSelectedModel = localStorage.getItem("selectedModel")
     if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(savedSelectedModel)) {
       setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
@@ -51,6 +52,16 @@ export default function CoderPage() {
     const savedApiKey = localStorage.getItem("apiKey")
     if (savedApiKey) {
       setApiKey(savedApiKey)
+    }
+    if (savedConversations) {
+      const parsedConversations = JSON.parse(savedConversations)
+      const validConversations = parsedConversations.filter((convo: { id: number; title: string }) =>
+        typeof convo.id === 'number' && !isNaN(convo.id) && convo.title
+      )
+      setConversations(validConversations.length > 0 ? validConversations : [{ id: 1, title: "New Conversation" }])
+      if (validConversations.length > 0) {
+        setCurrentConversationId(validConversations[0].id)
+      }
     }
   }, [])
 
