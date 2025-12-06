@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw, Search } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -121,7 +121,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
-  const [isSearchEnabled, setIsSearchEnabled] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -134,6 +134,15 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [conversationMessages])
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
@@ -328,7 +337,7 @@ export default function Home() {
       }))
 
       try {
-        const modelId = getModelId(selectedModel)
+        let modelId = getModelId(selectedModel)
         const currentMessages = conversationMessages[currentConversationId] || []
         const requestBody: any = {
           model: modelId,
@@ -343,10 +352,6 @@ export default function Home() {
           stream: true
         }
 
-        if (isSearchEnabled) {
-          requestBody.plugins = [{ "id": "web" }]
-        }
-
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
@@ -357,7 +362,8 @@ export default function Home() {
         })
 
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
+          const errorText = await response.text()
+          throw new Error(`API error: ${response.status} - ${errorText}`)
         }
 
         const reader = response.body?.getReader()
@@ -438,7 +444,7 @@ export default function Home() {
     }))
 
     try {
-      const modelId = getModelId(selectedModel)
+      let modelId = getModelId(selectedModel)
       const currentMessages = conversationMessages[currentConversationId] || []
       const contextMessages = currentMessages.slice(0, messageIndex + 1).map(m => ({
         role: m.isUser ? "user" : "assistant",
@@ -455,10 +461,6 @@ export default function Home() {
         stream: true
       }
 
-      if (isSearchEnabled) {
-        requestBody.plugins = [{ "id": "web" }]
-      }
-
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -469,7 +471,8 @@ export default function Home() {
       })
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
+        const errorText = await response.text()
+        throw new Error(`API error: ${response.status} - ${errorText}`)
       }
 
       const reader = response.body?.getReader()
@@ -551,7 +554,7 @@ export default function Home() {
     }))
 
     try {
-      const modelId = getModelId(selectedModel)
+      let modelId = getModelId(selectedModel)
       const currentMessages = conversationMessages[currentConversationId] || []
       const contextMessages = currentMessages.slice(0, messageIndex).map(m => ({
         role: m.isUser ? "user" : "assistant",
@@ -568,10 +571,6 @@ export default function Home() {
         stream: true
       }
 
-      if (isSearchEnabled) {
-        requestBody.plugins = [{ "id": "web" }]
-      }
-
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -582,7 +581,8 @@ export default function Home() {
       })
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
+        const errorText = await response.text()
+        throw new Error(`API error: ${response.status} - ${errorText}`)
       }
 
       const reader = response.body?.getReader()
@@ -644,7 +644,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed left-0 top-0 h-full ${isMobile ? 'w-full' : 'w-64'} bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-30`}>
         <div className="p-4">
           <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-gray-300 mb-4">
             <img src="/favicon.ico" alt="Close" className="w-12 h-12" />
@@ -723,7 +723,7 @@ export default function Home() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
-      <div className={`fixed top-4 z-10 flex items-center gap-2 ${isSidebarOpen ? 'left-68' : 'left-4'}`}>
+      <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-4'}`}>
         <Select value={selectedModel} onValueChange={(value) => {
           if (value === "view-more") {
             setShowAllModels(!showAllModels)
@@ -733,7 +733,7 @@ export default function Home() {
           setSelectedModel(model)
           console.log("Model changed to:", model)
         }}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className={`${isMobile ? 'w-[160px]' : 'w-[220px]'}`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -744,28 +744,17 @@ export default function Home() {
             <SelectItem value="Kimi">Kimi</SelectItem>
           </SelectContent>
         </Select>
-        <button
-          onClick={() => setIsSearchEnabled(!isSearchEnabled)}
-          className={`p-2 rounded-lg transition-colors ${
-            isSearchEnabled
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-          }`}
-          title={isSearchEnabled ? "Disable search tool" : "Enable search tool"}
-        >
-          <Search size={20} />
-        </button>
       </div>
       <button onClick={createNewConversation} className={`fixed top-4 z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 ${isSidebarOpen ? 'right-4' : 'right-4'}`}>
         +
       </button>
-      <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${isSidebarOpen ? 'ml-64' : ''}`}>
+      <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${!isMobile && isSidebarOpen ? 'ml-64' : ''}`}>
         <div className="flex-1 overflow-y-auto pb-32">
           <div className="w-full flex justify-center">
-            <div className="w-[50%] py-8 px-4 space-y-6">
+            <div className={`${isMobile ? 'w-full' : 'w-[50%]'} py-8 ${isMobile ? 'px-2' : 'px-4'} space-y-6`}>
               {(conversationMessages[currentConversationId] || []).map((msg) => (
                 <div key={msg.id} className={`flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-[80%] px-4 py-3 rounded-lg text-white border ${
+                  <div className={`${isMobile ? 'max-w-[90%]' : 'max-w-[80%]'} px-4 py-3 rounded-lg text-white border ${
                     msg.isUser
                       ? 'rounded-bl-none border-blue-500 bg-gray-800'
                       : 'rounded-br-none border-gray-600 bg-gray-700'
@@ -819,10 +808,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: isSidebarOpen ? '16rem' : '0' }}>
-          <div className="w-[50%] px-4">
+        <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: !isMobile && isSidebarOpen ? '16rem' : '0' }}>
+          <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
-              <div className="text-center text-white text-6xl mb-4">
+              <div className={`text-center text-white ${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>
                 Hi, I'm {selectedModel}!
               </div>
             )}
