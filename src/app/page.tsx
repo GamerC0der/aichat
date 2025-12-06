@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw, Search } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -121,6 +121,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
+  const [isSearchEnabled, setIsSearchEnabled] = useState(false)
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -329,24 +330,30 @@ export default function Home() {
       try {
         const modelId = getModelId(selectedModel)
         const currentMessages = conversationMessages[currentConversationId] || []
+        const requestBody: any = {
+          model: modelId,
+          messages: [
+            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+            ...currentMessages.map(m => ({
+              role: m.isUser ? "user" : "assistant",
+              content: m.text
+            })),
+            { role: "user", content: currentMessage }
+          ],
+          stream: true
+        }
+
+        if (isSearchEnabled) {
+          requestBody.plugins = [{ "id": "web" }]
+        }
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            model: modelId,
-            messages: [
-              ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-              ...currentMessages.map(m => ({
-                role: m.isUser ? "user" : "assistant",
-                content: m.text
-              })),
-              { role: "user", content: currentMessage }
-            ],
-            stream: true
-          })
+          body: JSON.stringify(requestBody)
         })
 
         if (!response.ok) {
@@ -438,21 +445,27 @@ export default function Home() {
         content: m.text
       }))
 
+      const requestBody: any = {
+        model: modelId,
+        messages: [
+          ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+          ...contextMessages,
+          { role: "user", content: userMessageText }
+        ],
+        stream: true
+      }
+
+      if (isSearchEnabled) {
+        requestBody.plugins = [{ "id": "web" }]
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-            ...contextMessages,
-            { role: "user", content: userMessageText }
-          ],
-          stream: true
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
@@ -545,21 +558,27 @@ export default function Home() {
         content: m.text
       }))
 
+      const requestBody: any = {
+        model: modelId,
+        messages: [
+          ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+          ...contextMessages,
+          { role: "user", content: userMessageText }
+        ],
+        stream: true
+      }
+
+      if (isSearchEnabled) {
+        requestBody.plugins = [{ "id": "web" }]
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-            ...contextMessages,
-            { role: "user", content: userMessageText }
-          ],
-          stream: true
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
@@ -704,7 +723,7 @@ export default function Home() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
-      <div className={`fixed top-4 z-10 ${isSidebarOpen ? 'left-68' : 'left-4'}`}>
+      <div className={`fixed top-4 z-10 flex items-center gap-2 ${isSidebarOpen ? 'left-68' : 'left-4'}`}>
         <Select value={selectedModel} onValueChange={(value) => {
           if (value === "view-more") {
             setShowAllModels(!showAllModels)
@@ -725,6 +744,17 @@ export default function Home() {
             <SelectItem value="Kimi">Kimi</SelectItem>
           </SelectContent>
         </Select>
+        <button
+          onClick={() => setIsSearchEnabled(!isSearchEnabled)}
+          className={`p-2 rounded-lg transition-colors ${
+            isSearchEnabled
+              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+          }`}
+          title={isSearchEnabled ? "Disable search tool" : "Enable search tool"}
+        >
+          <Search size={20} />
+        </button>
       </div>
       <button onClick={createNewConversation} className={`fixed top-4 z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 ${isSidebarOpen ? 'right-4' : 'right-4'}`}>
         +
