@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2 } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -93,14 +93,18 @@ export default function Home() {
     }
     if (savedConversations) {
       const parsedConversations = JSON.parse(savedConversations)
-      setConversations(parsedConversations)
-      if (parsedConversations.length > 0) {
-        setCurrentConversationId(parsedConversations[0].id)
+      const validConversations = parsedConversations.filter((convo: { id: number; title: string }) =>
+        typeof convo.id === 'number' && !isNaN(convo.id) && convo.title
+      )
+      setConversations(validConversations.length > 0 ? validConversations : [{ id: 1, title: "New Conversation" }])
+      if (validConversations.length > 0) {
+        setCurrentConversationId(validConversations[0].id)
       }
     }
     if (savedMessages) {
       setConversationMessages(JSON.parse(savedMessages))
     }
+    setMenuOpen(null)
   }, [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
@@ -115,7 +119,6 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
-  const [ttsEnabled, setTtsEnabled] = useState(true)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
 
   useEffect(() => {
@@ -138,7 +141,12 @@ export default function Home() {
   }
 
   const createNewConversation = () => {
-    const newId = Math.max(...conversations.map(c => c.id)) + 1
+    const currentMessages = conversationMessages[currentConversationId] || []
+    if (currentMessages.length === 0) {
+      return
+    }
+    const validIds = conversations.map(c => c.id).filter(id => typeof id === 'number' && !isNaN(id))
+    const newId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1
     setConversations([...conversations, { id: newId, title: "New Conversation" }])
     setCurrentConversationId(newId)
     setConversationMessages(prev => ({ ...prev, [newId]: [] }))
@@ -298,7 +306,6 @@ export default function Home() {
       setMessage("")
       setIsLoading(true)
 
-      // Generate title from first message
       if (isFirstMessage) {
         generateTitleFromFirstMessage(currentMessage)
       }
@@ -389,6 +396,218 @@ export default function Home() {
       } finally {
         setIsLoading(false)
       }
+    }
+  }
+
+  const retryMessage = async (messageId: number) => {
+    const messages = conversationMessages[currentConversationId] || []
+    const messageIndex = messages.findIndex(m => m.id === messageId)
+    if (messageIndex === -1 || !messages[messageIndex].isUser) return
+
+    const userMessageText = messages[messageIndex].text
+
+    const messagesAfter = messages.slice(messageIndex + 1)
+    setConversationMessages(prev => ({
+      ...prev,
+      [currentConversationId]: messages.slice(0, messageIndex + 1)
+    }))
+
+    setIsLoading(true)
+
+    const assistantMessageId = Date.now() + 1
+    const assistantMessage = {
+      id: assistantMessageId,
+      text: "",
+      isUser: false
+    }
+    setConversationMessages(prev => ({
+      ...prev,
+      [currentConversationId]: [...prev[currentConversationId], assistantMessage]
+    }))
+
+    try {
+      const modelId = getModelId(selectedModel)
+      const currentMessages = conversationMessages[currentConversationId] || []
+      const contextMessages = currentMessages.slice(0, messageIndex + 1).map(m => ({
+        role: m.isUser ? "user" : "assistant",
+        content: m.text
+      }))
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [
+            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+            ...contextMessages,
+            { role: "user", content: userMessageText }
+          ],
+          stream: true
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (reader) {
+        let buffer = ""
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split("\n")
+          buffer = lines.pop() || ""
+
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.slice(6))
+                const content = data.choices?.[0]?.delta?.content
+                if (content) {
+                  setConversationMessages(prev => ({
+                    ...prev,
+                    [currentConversationId]: prev[currentConversationId].map(m =>
+                      m.id === assistantMessageId
+                        ? { ...m, text: m.text + content }
+                        : m
+                    )
+                  }))
+                }
+              } catch (e) {
+                console.error("Error parsing stream:", e)
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error retrying message:", error)
+      setConversationMessages(prev => ({
+        ...prev,
+        [currentConversationId]: prev[currentConversationId].map(m =>
+          m.id === assistantMessageId
+            ? { ...m, text: "Error: Failed to get response. Please check your API key." }
+            : m
+        )
+      }))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const regenerateResponse = async (messageId: number) => {
+    const messages = conversationMessages[currentConversationId] || []
+    const messageIndex = messages.findIndex(m => m.id === messageId)
+    if (messageIndex === -1 || messages[messageIndex].isUser) return
+
+    const previousUserMessageIndex = messageIndex - 1
+    if (previousUserMessageIndex < 0 || !messages[previousUserMessageIndex].isUser) return
+
+    const userMessageText = messages[previousUserMessageIndex].text
+
+    setConversationMessages(prev => ({
+      ...prev,
+      [currentConversationId]: messages.slice(0, messageIndex)
+    }))
+
+    setIsLoading(true)
+
+    const newAssistantMessageId = Date.now() + 1
+    const assistantMessage = {
+      id: newAssistantMessageId,
+      text: "",
+      isUser: false
+    }
+    setConversationMessages(prev => ({
+      ...prev,
+      [currentConversationId]: [...prev[currentConversationId], assistantMessage]
+    }))
+
+    try {
+      const modelId = getModelId(selectedModel)
+      const currentMessages = conversationMessages[currentConversationId] || []
+      const contextMessages = currentMessages.slice(0, messageIndex).map(m => ({
+        role: m.isUser ? "user" : "assistant",
+        content: m.text
+      }))
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [
+            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+            ...contextMessages,
+            { role: "user", content: userMessageText }
+          ],
+          stream: true
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (reader) {
+        let buffer = ""
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split("\n")
+          buffer = lines.pop() || ""
+
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.slice(6))
+                const content = data.choices?.[0]?.delta?.content
+                if (content) {
+                  setConversationMessages(prev => ({
+                    ...prev,
+                    [currentConversationId]: prev[currentConversationId].map(m =>
+                      m.id === newAssistantMessageId
+                        ? { ...m, text: m.text + content }
+                        : m
+                    )
+                  }))
+                }
+              } catch (e) {
+                console.error("Error parsing stream:", e)
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error regenerating response:", error)
+      setConversationMessages(prev => ({
+        ...prev,
+        [currentConversationId]: prev[currentConversationId].map(m =>
+          m.id === newAssistantMessageId
+            ? { ...m, text: "Error: Failed to get response. Please check your API key." }
+            : m
+        )
+      }))
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -524,19 +743,39 @@ export default function Home() {
                   </div>
                   <div className="flex items-center text-xs text-gray-400 mt-1 px-2">
                     <span>{formatTime(msg.id)}</span>
-                    {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
+                    {msg.isUser && (
                       <button
-                        onClick={() => speakMessage(msg.text)}
-                        disabled={isTtsLoading}
+                        onClick={() => retryMessage(msg.id)}
+                        disabled={isLoading}
                         className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={isTtsLoading ? "Generating speech..." : "Speak message"}
+                        title="Retry message"
                       >
-                        {isTtsLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Volume2 size={14} />
-                        )}
+                        <RefreshCw size={14} />
                       </button>
+                    )}
+                    {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
+                      <>
+                        <button
+                          onClick={() => regenerateResponse(msg.id)}
+                          disabled={isLoading}
+                          className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Regenerate response"
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                        <button
+                          onClick={() => speakMessage(msg.text)}
+                          disabled={isTtsLoading}
+                          className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={isTtsLoading ? "Generating speech..." : "Speak message"}
+                        >
+                          {isTtsLoading ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Volume2 size={14} />
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -628,18 +867,6 @@ export default function Home() {
                     rows={4}
                     className="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
                   />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    id="tts"
-                    type="checkbox"
-                    checked={ttsEnabled}
-                    onChange={(e) => setTtsEnabled(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <label htmlFor="tts" className="text-sm font-medium text-gray-700">
-                    Enable Text-to-Speech
-                  </label>
                 </div>
               </>
             )}
