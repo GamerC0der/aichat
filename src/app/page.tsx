@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw, CheckCircle } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -835,9 +835,12 @@ export default function Home() {
         <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: !isMobile && isSidebarOpen ? '16rem' : '0' }}>
           <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
-              <div className={`text-center text-white ${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>
-                Hi, I'm {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}!
-              </div>
+              <>
+                <CheckCircle size={48} className="text-green-500 mx-auto mb-4" />
+                <div className={`text-center text-white ${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>
+                  Hi, I'm {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}!
+                </div>
+              </>
             )}
             <div className="relative">
               <input

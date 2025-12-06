@@ -2,6 +2,13 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function CoderPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -12,10 +19,15 @@ export default function CoderPage() {
   const [editTitle, setEditTitle] = useState("")
   const editInputRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
   }, [conversations])
+
+  useEffect(() => {
+    localStorage.setItem("selectedModel", selectedModel)
+  }, [selectedModel])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -25,6 +37,24 @@ export default function CoderPage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  useEffect(() => {
+    const savedSelectedModel = localStorage.getItem("selectedModel")
+    if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(savedSelectedModel)) {
+      setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
+    }
+  }, [])
+
+  const getModelId = (model: string) => {
+    const modelMap: Record<string, string> = {
+      "Gemini": "google/gemini-2.5-flash",
+      "GPT 5": "openai/gpt-5-mini",
+      "Grok": "x-ai/grok-4.1-fast",
+      "Gemini 3": "google/gemini-3-pro-preview",
+      "Kimi": "moonshotai/kimi-k2-0905"
+    }
+    return modelMap[model] || modelMap["Gemini"]
+  }
 
   const createNewConversation = () => {
     const validIds = conversations.map(c => c.id).filter(id => typeof id === 'number' && !isNaN(id))
@@ -156,6 +186,25 @@ export default function CoderPage() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
+      <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-4'}`}>
+        <Select value={selectedModel} onValueChange={(value) => {
+          const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
+          setSelectedModel(model)
+        }}>
+          <SelectTrigger className={`${isMobile ? 'w-[160px]' : 'w-[220px]'}`}>
+            <span className="truncate flex-1 text-left">
+              {selectedModel}
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Gemini">Gemini</SelectItem>
+            <SelectItem value="GPT 5">GPT 5</SelectItem>
+            <SelectItem value="Grok">Grok</SelectItem>
+            <SelectItem value="Gemini 3">Gemini 3</SelectItem>
+            <SelectItem value="Kimi">Kimi</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <button onClick={createNewConversation} className={`fixed top-4 z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 ${isSidebarOpen ? 'right-4' : 'right-4'}`}>
         +
       </button>
