@@ -81,6 +81,8 @@ export default function Home() {
     const savedPrompt = localStorage.getItem("systemPrompt")
     const savedConversations = localStorage.getItem("conversations")
     const savedMessages = localStorage.getItem("conversationMessages")
+    const savedCustomModelId = localStorage.getItem("customModelId")
+    const savedSelectedModel = localStorage.getItem("selectedModel")
 
     if (savedKey) {
       setApiKey(savedKey)
@@ -90,6 +92,12 @@ export default function Home() {
     }
     if (savedPrompt) {
       setSystemPrompt(savedPrompt)
+    }
+    if (savedCustomModelId) {
+      setCustomModelId(savedCustomModelId)
+    }
+    if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi", "Custom"].includes(savedSelectedModel)) {
+      setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi" | "Custom")
     }
     if (savedConversations) {
       const parsedConversations = JSON.parse(savedConversations)
@@ -117,7 +125,9 @@ export default function Home() {
   const messageInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [conversationMessages, setConversationMessages] = useState<Record<number, Array<{id: number, text: string, isUser: boolean}>>>({1: []})
-  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
+  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi" | "Custom">("Gemini")
+  const [customModelId, setCustomModelId] = useState("")
+  const [isCustomModelModalOpen, setIsCustomModelModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
@@ -130,6 +140,14 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("conversationMessages", JSON.stringify(conversationMessages))
   }, [conversationMessages])
+
+  useEffect(() => {
+    localStorage.setItem("customModelId", customModelId)
+  }, [customModelId])
+
+  useEffect(() => {
+    localStorage.setItem("selectedModel", selectedModel)
+  }, [selectedModel])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -150,9 +168,16 @@ export default function Home() {
       "GPT 5": "openai/gpt-5-mini",
       "Grok": "x-ai/grok-4.1-fast",
       "Gemini 3": "google/gemini-3-pro-preview",
-      "Kimi": "moonshotai/kimi-k2-0905"
+      "Kimi": "moonshotai/kimi-k2-0905",
+      "Custom": customModelId || "google/gemini-2.5-flash"
     }
     return modelMap[model] || modelMap["Gemini"]
+  }
+
+  const getCustomModelDisplayName = (modelId: string) => {
+    if (!modelId) return "Custom"
+    const provider = modelId.split('/')[0]
+    return provider.charAt(0).toUpperCase() + provider.slice(1)
   }
 
   const createNewConversation = () => {
@@ -729,12 +754,18 @@ export default function Home() {
             setShowAllModels(!showAllModels)
             return
           }
+          if (value === "Custom") {
+            setIsCustomModelModalOpen(true)
+            return
+          }
           const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
           setSelectedModel(model)
           console.log("Model changed to:", model)
         }}>
           <SelectTrigger className={`${isMobile ? 'w-[160px]' : 'w-[220px]'}`}>
-            <SelectValue />
+            <span className="truncate flex-1 text-left">
+              {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}
+            </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Gemini">Gemini</SelectItem>
@@ -742,6 +773,7 @@ export default function Home() {
             <SelectItem value="Grok">Grok</SelectItem>
             <SelectItem value="Gemini 3">Gemini 3</SelectItem>
             <SelectItem value="Kimi">Kimi</SelectItem>
+            <SelectItem value="Custom">Custom</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -812,7 +844,7 @@ export default function Home() {
           <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
               <div className={`text-center text-white ${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>
-                Hi, I'm {selectedModel}!
+                Hi, I'm {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}!
               </div>
             )}
             <div className="relative">
@@ -924,6 +956,49 @@ export default function Home() {
               Save
             </button>
           )}
+        </ModalFooter>
+      </Modal>
+
+      <Modal isOpen={isCustomModelModalOpen} onClose={() => setIsCustomModelModalOpen(false)}>
+        <ModalHeader>
+          <h2 className="text-lg font-semibold">Custom</h2>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="customModelId" className="block text-sm font-medium text-gray-700 mb-2">
+                Model ID
+              </label>
+              <input
+                id="customModelId"
+                type="text"
+                value={customModelId}
+                onChange={(e) => setCustomModelId(e.target.value)}
+                placeholder="Enter custom model ID (e.g., nvidia/nemotron-nano-12b-v2-vl)"
+                className="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            onClick={() => setIsCustomModelModalOpen(false)}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mr-2"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (customModelId.trim()) {
+                setSelectedModel("Custom")
+                setIsCustomModelModalOpen(false)
+              }
+            }}
+            disabled={!customModelId.trim()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Set Model
+          </button>
         </ModalFooter>
       </Modal>
 
