@@ -20,6 +20,11 @@ export default function CoderPage() {
   const editInputRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
+  const [message, setMessage] = useState("")
+  const messageInputRef = useRef<HTMLInputElement>(null)
+  const [generatedHtml, setGeneratedHtml] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [apiKey, setApiKey] = useState("")
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -43,6 +48,10 @@ export default function CoderPage() {
     if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(savedSelectedModel)) {
       setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
     }
+    const savedApiKey = localStorage.getItem("apiKey")
+    if (savedApiKey) {
+      setApiKey(savedApiKey)
+    }
   }, [])
 
   const getModelId = (model: string) => {
@@ -54,6 +63,81 @@ export default function CoderPage() {
       "Kimi": "moonshotai/kimi-k2-0905"
     }
     return modelMap[model] || modelMap["Gemini"]
+  }
+
+  const generateHtml = async () => {
+    if (!message.trim() || isLoading || !apiKey) return
+
+    setIsLoading(true)
+    setGeneratedHtml("")
+    const currentMessage = message
+    setMessage("")
+
+    try {
+      const modelId = getModelId(selectedModel)
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [
+            {
+              role: "system",
+              content: "You are a web developer. Generate a complete, valid HTML page based on the user's description. Include modern CSS styling and make it responsive. Use background color rgb(31, 41, 55) (equivalent to gray-800) for the main background to match the application theme. Return ONLY the HTML code, no explanations or markdown formatting."
+            },
+            {
+              role: "user",
+              content: currentMessage
+            }
+          ],
+          stream: true
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`API error: ${response.status} - ${errorText}`)
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (reader) {
+        let buffer = ""
+        let accumulatedHtml = ""
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split("\n")
+          buffer = lines.pop() || ""
+
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.slice(6))
+                const content = data.choices?.[0]?.delta?.content
+                if (content) {
+                  accumulatedHtml += content
+                  setGeneratedHtml(accumulatedHtml)
+                }
+              } catch (e) {
+                console.error("Error parsing stream:", e)
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error generating HTML:", error)
+      setGeneratedHtml(`<html><body><h1>Error</h1><p>Failed to generate HTML. Please check your API key and try again.</p></body></html>`)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const createNewConversation = () => {
@@ -209,8 +293,70 @@ export default function CoderPage() {
         +
       </button>
       <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${!isMobile && isSidebarOpen ? 'ml-64' : ''}`}>
-        <div className="flex-1">
-        </div>
+        {generatedHtml || isLoading ? (
+          <div className="flex-1 flex flex-col">
+            <div className="p-4 border-b border-gray-600">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-white text-lg font-semibold">Preview</h2>
+                  {isLoading && (
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setGeneratedHtml("")
+                    setMessage("")
+                  }}
+                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+                >
+                  New Project
+                </button>
+              </div>
+            </div>
+            <div className="flex-1">
+              <iframe
+                srcDoc={generatedHtml || '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Arial,sans-serif;"><h2 style="color:#666;">Generating your website...</h2></body></html>'}
+                className="w-full h-full border-0"
+                title="HTML Preview"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
+              <div className="text-center text-white text-6xl mb-4">
+                Code with {selectedModel}
+              </div>
+              <div className="relative">
+                <input
+                  ref={messageInputRef}
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      generateHtml()
+                    }
+                  }}
+                  placeholder="Describe what you want to build..."
+                  className="w-full px-4 py-3 pr-12 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={generateHtml}
+                  disabled={!message.trim() || isLoading || !apiKey}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isLoading ? "..." : "↑"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
