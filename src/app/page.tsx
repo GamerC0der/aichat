@@ -115,6 +115,7 @@ export default function Home() {
   const editInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const [conversationMessages, setConversationMessages] = useState<Record<number, Array<{id: number, text: string, isUser: boolean}>>>({1: []})
   const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
   const [isLoading, setIsLoading] = useState(false)
@@ -127,6 +128,10 @@ export default function Home() {
 
   useEffect(() => {
     localStorage.setItem("conversationMessages", JSON.stringify(conversationMessages))
+  }, [conversationMessages])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [conversationMessages])
 
   const getModelId = (model: string) => {
@@ -780,6 +785,7 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </div>
         </div>
