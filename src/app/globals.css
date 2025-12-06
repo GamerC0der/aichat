@@ -179,3 +179,32 @@
 .markdown-content a {
   @apply text-blue-400 underline hover:text-blue-300;
 }
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(31, 41, 55);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(107, 114, 128);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgb(156, 163, 175);
+}
+
+::-webkit-scrollbar-corner {
+  background: rgb(31, 41, 55);
+}
