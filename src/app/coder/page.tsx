@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select"
 
 export default function CoderPage() {
+  const router = useRouter()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
   const [currentConversationId, setCurrentConversationId] = useState(1)
@@ -282,6 +283,15 @@ export default function CoderPage() {
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
       <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-4'}`}>
+        <button
+          onClick={() => router.back()}
+          className="w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center justify-center transition-colors"
+          title="Go back"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
         <Select value={selectedModel} onValueChange={(value) => {
           const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
           setSelectedModel(model)
