@@ -148,7 +148,7 @@ const parseMarkdown = (text: string): string => {
   return result
 }
 
-function HomeContent() {
+export default function HomeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -214,12 +214,23 @@ function HomeContent() {
   const [isMobile, setIsMobile] = useState(false)
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState("")
+  const [highlightApiKeyInput, setHighlightApiKeyInput] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     x: number;
     y: number;
     conversationId: number | null;
   }>({ isOpen: false, x: 0, y: 0, conversationId: null })
+
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', hour12: false })
+    const hourNum = parseInt(hour)
+    if (hourNum >= 5 && hourNum < 12) return "Good morning"
+    if (hourNum >= 12 && hourNum < 17) return "Good afternoon"
+    if (hourNum >= 17 && hourNum < 22) return "Good evening"
+    if (hourNum >= 22 || hourNum < 5) return "Good night"
+    return "Hi"
+  }
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -257,6 +268,18 @@ function HomeContent() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  useEffect(() => {
+    if (isModalOpen && isInitialSetup) {
+      setHighlightApiKeyInput(true)
+      const timeout = setTimeout(() => {
+        setHighlightApiKeyInput(false)
+      }, 5000)
+      return () => clearTimeout(timeout)
+    } else {
+      setHighlightApiKeyInput(false)
+    }
+  }, [isModalOpen, isInitialSetup])
 
   useEffect(() => {
     return () => {
@@ -838,7 +861,8 @@ function HomeContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
+    <Suspense fallback={<div className="flex min-h-screen bg-[rgb(24,24,37)] items-center justify-center"><div className="text-white">Loading...</div></div>}>
+      <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
       <aside
         className={`fixed h-full ${isMobile ? 'w-full' : 'w-64'} bg-gray-900 border-r border-gray-700 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-30`}
       >
@@ -971,8 +995,7 @@ function HomeContent() {
                           setEditingText(msg.text)
                         }}
                         disabled={isLoading}
-                        className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                        title="Edit message (Enter to save, Escape to cancel)"
+                        className="p-1.5 hover:bg-gray-500 rounded-md transition-all duration-250 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
                       >
                         <Edit size={14} />
                       </button>
@@ -988,7 +1011,7 @@ function HomeContent() {
             {(conversationMessages[currentConversationId] || []).length === 0 && (
               <>
                 <div className={`text-center text-white ${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>
-                  Hi, I'm {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}!
+                  {getTimeBasedGreeting()}, I'm {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}!
                 </div>
               </>
             )}
@@ -1101,7 +1124,7 @@ function HomeContent() {
                   }
                 }}
                 placeholder="Enter the rest of your API key"
-                className="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 ${highlightApiKeyInput && isInitialSetup ? 'ring-4 ring-yellow-400 ring-opacity-50 bg-yellow-50 text-gray-900' : ''}`}
               />
               <p className="text-sm text-gray-600 mt-2">
                 P.S: You can obtain the key at ai.hackclub.com
@@ -1201,14 +1224,7 @@ function HomeContent() {
 
       <ContextMenu />
 
-    </div>
-  );
-}
-
-export default function Home() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen bg-[rgb(24,24,37)] items-center justify-center"><div className="text-white">Loading...</div></div>}>
-      <HomeContent />
+      </div>
     </Suspense>
-  )
+  );
 }
