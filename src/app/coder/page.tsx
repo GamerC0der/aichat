@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { Send, Loader2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -493,7 +494,11 @@ export default function CoderPage() {
                   disabled={!message.trim() || isLoading || !apiKey}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? "..." : "↑"}
+                  {isLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
                 </button>
               </div>
             </div>

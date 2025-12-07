@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key, Send } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -922,7 +922,11 @@ export default function Home() {
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Send message"
               >
-                ↑
+                {isLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Send size={16} />
+                )}
               </button>
             </div>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
