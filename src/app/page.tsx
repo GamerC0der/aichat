@@ -1,6 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition
+    webkitSpeechRecognition: typeof SpeechRecognition
+  }
+}
 import { useRouter, useSearchParams } from "next/navigation"
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal"
 import {
@@ -10,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key, Send } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key, Send, Mic, MicOff, Plus } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -132,6 +139,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [showAllModels, setShowAllModels] = useState(false)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
+  const [isSttRecording, setIsSttRecording] = useState(false)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
@@ -177,7 +186,13 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
@@ -317,6 +332,53 @@ export default function Home() {
           setIsTtsLoading(false)
         }
       }
+    }
+  }
+
+  const startSpeechRecognition = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser.')
+      return
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    recognitionRef.current = new SpeechRecognition()
+    recognitionRef.current.continuous = false
+    recognitionRef.current.interimResults = false
+    recognitionRef.current.lang = 'en-US'
+
+    recognitionRef.current.onstart = () => {
+      setIsSttRecording(true)
+    }
+
+    recognitionRef.current.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      setMessage(transcript)
+    }
+
+    recognitionRef.current.onend = () => {
+      setIsSttRecording(false)
+    }
+
+    recognitionRef.current.onerror = (event) => {
+      console.error('Speech recognition error:', event.error)
+      setIsSttRecording(false)
+    }
+
+    recognitionRef.current.start()
+  }
+
+  const stopSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+  }
+
+  const toggleSpeechRecognition = () => {
+    if (isSttRecording) {
+      stopSpeechRecognition()
+    } else {
+      startSpeechRecognition()
     }
   }
 
@@ -842,8 +904,20 @@ export default function Home() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Type your message..."
-                className="w-full px-4 py-3 pr-12 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 pr-12 pl-12 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <button
+                onClick={toggleSpeechRecognition}
+                disabled={isLoading}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={isSttRecording ? "Stop recording" : "Start voice input"}
+              >
+                {isSttRecording ? (
+                  <MicOff size={16} className="text-red-400" />
+                ) : (
+                  <Mic size={16} />
+                )}
+              </button>
               <button
                 onClick={sendMessage}
                 disabled={!message.trim() || isLoading}
@@ -858,13 +932,21 @@ export default function Home() {
               </button>
             </div>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
-              <div className="flex gap-2 mt-2">
+              <div className="flex mt-4 gap-2 justify-center">
+                <button
+                  onClick={createNewConversation}
+                  disabled={isLoading}
+                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Plus size={14} />
+                  New Chat
+                </button>
                 <button
                   onClick={() => router.push(`/coder${selectedModel ? `?model=${encodeURIComponent(selectedModel)}` : ""}`)}
                   disabled={isLoading}
-                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <Code size={16} />
+                  <Code size={14} />
                   Coder
                 </button>
                 <button
@@ -873,9 +955,9 @@ export default function Home() {
                     setIsInitialSetup(false)
                   }}
                   disabled={isLoading}
-                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <Key size={16} />
+                  <Key size={14} />
                   Reset Key
                 </button>
               </div>
