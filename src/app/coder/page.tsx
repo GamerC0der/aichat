@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Send, Loader2 } from "lucide-react"
 import {
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export default function CoderPage() {
+function CoderPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -518,5 +518,13 @@ export default function CoderPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function CoderPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen bg-[rgb(24,24,37)] items-center justify-center"><div className="text-white">Loading...</div></div>}>
+      <CoderPageContent />
+    </Suspense>
   )
 }
