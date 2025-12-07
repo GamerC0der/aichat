@@ -86,7 +86,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key, Send, Mic, MicOff, Plus, Edit, Check, X } from "lucide-react"
+import { Settings, Volume2, Loader2, Code, Key, Send, Mic, MicOff, Plus, Edit } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -926,6 +926,22 @@ function HomeContent() {
                       <textarea
                         value={editingText}
                         onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            setConversationMessages(prev => ({
+                              ...prev,
+                              [currentConversationId]: prev[currentConversationId].map(m =>
+                                m.id === msg.id ? { ...m, text: editingText } : m
+                              )
+                            }))
+                            setEditingMessageId(null)
+                            setEditingText("")
+                          } else if (e.key === 'Escape') {
+                            setEditingMessageId(null)
+                            setEditingText("")
+                          }
+                        }}
                         className="w-full bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none border border-blue-400/30 rounded px-2 py-1 focus:border-blue-400/60 transition-colors"
                         rows={Math.max(3, editingText.split('\n').length)}
                         autoFocus
@@ -936,73 +952,18 @@ function HomeContent() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-400 mt-2 px-2">
                     <span>{formatTime(msg.id)}</span>
-                    {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
-                      <div className="flex items-center gap-1">
-                        {editingMessageId !== msg.id ? (
-                          <button
-                            onClick={() => {
-                              setEditingMessageId(msg.id)
-                              setEditingText(msg.text)
-                            }}
-                            disabled={isLoading}
-                            className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                            title="Edit message"
-                          >
-                            <Edit size={14} />
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => {
-                                setConversationMessages(prev => ({
-                                  ...prev,
-                                  [currentConversationId]: prev[currentConversationId].map(m =>
-                                    m.id === msg.id ? { ...m, text: editingText } : m
-                                  )
-                                }))
-                                setEditingMessageId(null)
-                                setEditingText("")
-                              }}
-                              disabled={isLoading}
-                              className="p-1.5 bg-green-600 hover:bg-green-500 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                              title="Save changes"
-                            >
-                              <Check size={14} />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingMessageId(null)
-                                setEditingText("")
-                              }}
-                              disabled={isLoading}
-                              className="p-1.5 bg-red-600 hover:bg-red-500 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                              title="Cancel editing"
-                            >
-                              <X size={14} />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => regenerateResponse(msg.id)}
-                          disabled={isLoading}
-                          className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                          title="Regenerate response"
-                        >
-                          <RefreshCw size={14} />
-                        </button>
-                        <button
-                          onClick={() => speakMessage(msg.text)}
-                          disabled={isTtsLoading}
-                          className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                          title={isTtsLoading ? "Generating speech..." : "Speak message"}
-                        >
-                          {isTtsLoading ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Volume2 size={14} />
-                          )}
-                        </button>
-                      </div>
+                    {!msg.isUser && msg.text && msg.text !== "Thinking..." && editingMessageId !== msg.id && (
+                      <button
+                        onClick={() => {
+                          setEditingMessageId(msg.id)
+                          setEditingText(msg.text)
+                        }}
+                        disabled={isLoading}
+                        className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                        title="Edit message (Enter to save, Escape to cancel)"
+                      >
+                        <Edit size={14} />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1010,8 +971,7 @@ function HomeContent() {
               <div ref={messagesEndRef} />
             </div>
           </div>
-        </div>
-        <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: !isMobile && isSidebarOpen ? '16rem' : '0' }}>
+        </div>        <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: !isMobile && isSidebarOpen ? '16rem' : '0' }}>
           <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
               <>
