@@ -42,7 +42,7 @@ interface SelectContextType {
   onValueChange: (value: string) => void
   isOpen: boolean
   setIsOpen: (open: boolean) => void
-  searchQuery: string
+  searchQuery: string 
   setSearchQuery: (query: string) => void
   searchable: boolean
   disabled: boolean

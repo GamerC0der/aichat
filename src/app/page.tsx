@@ -669,7 +669,7 @@ export default function Home() {
       <button onClick={() => setIsSidebarOpen(true)} className={`fixed top-4 left-4 z-10 p-2 bg-gray-700 text-white rounded hover:bg-gray-600 ${isSidebarOpen ? 'hidden' : ''}`}>
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
-      <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-4'}`}>
+      <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-24'}`}>
         <Select searchable value={selectedModel} onValueChange={(value) => {
           if (value === "view-more") {
             setShowAllModels(!showAllModels)
