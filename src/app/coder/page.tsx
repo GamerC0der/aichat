@@ -26,6 +26,10 @@ export default function CoderPage() {
   const [generatedHtml, setGeneratedHtml] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [apiKey, setApiKey] = useState("")
+  const [sidebarPosition, setSidebarPosition] = useState({ x: 0, y: 0 })
+  const [plusPosition, setPlusPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState<string | null>(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -43,6 +47,47 @@ export default function CoderPage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  const handleMouseDown = (e: React.MouseEvent, element: string) => {
+    e.preventDefault()
+    setIsDragging(element)
+    const rect = (e.target as HTMLElement).getBoundingClientRect()
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    })
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return
+
+    const newPosition = {
+      x: e.clientX - dragOffset.x,
+      y: e.clientY - dragOffset.y
+    }
+
+    if (isDragging === 'sidebar') {
+      setSidebarPosition(newPosition)
+    } else if (isDragging === 'plus') {
+      setPlusPosition(newPosition)
+    }
+  }
+
+  const handleMouseUp = () => {
+    if (!isDragging) return
+    setIsDragging(null)
+  }
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isDragging, dragOffset])
 
   useEffect(() => {
     const savedConversations = localStorage.getItem("conversations")
@@ -203,7 +248,15 @@ export default function CoderPage() {
 
   return (
     <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark">
-      <aside className={`fixed left-0 top-0 h-full ${isMobile ? 'w-full' : 'w-64'} bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-30`}>
+      <aside
+        className={`fixed h-full ${isMobile ? 'w-full' : 'w-64'} bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-30 cursor-move select-none`}
+        style={{
+          left: sidebarPosition.x,
+          top: sidebarPosition.y,
+          position: 'fixed'
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'sidebar')}
+      >
         <div className="p-4">
           <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-gray-300 mb-4">
             <img src="/favicon.ico" alt="Close" className="w-12 h-12" />
@@ -310,7 +363,16 @@ export default function CoderPage() {
           </SelectContent>
         </Select>
       </div>
-      <button onClick={createNewConversation} className={`fixed top-4 z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 ${isSidebarOpen ? 'right-4' : 'right-4'}`}>
+      <button
+        onClick={createNewConversation}
+        className="fixed z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 cursor-move select-none"
+        style={{
+          left: plusPosition.x || (isSidebarOpen ? 'calc(100vw - 3rem)' : 'calc(100vw - 3rem)'),
+          top: plusPosition.y || '1rem',
+          position: 'fixed'
+        }}
+        onMouseDown={(e) => handleMouseDown(e, 'plus')}
+      >
         +
       </button>
       <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${!isMobile && isSidebarOpen ? 'ml-64' : ''}`}>
