@@ -1,6 +1,6 @@
 # AI Chat
 
-This was made for the final week of hackclub's #siege event, over 14 weeks so far! The app uses hackclub's ai api (ai.hackclub.com), trying out the project requires a key. You can login with your hackclub account in order to recieve an api key, please be sure to check their rules before use! 
+This was made for the final week of hackclub's #siege event, with 14 weeks (including prep, which was 4 of them)! The app uses hackclub's ai api (ai.hackclub.com), trying out the project requires a key. You can log in with your HackClub account in order to receive an api key. Please be sure to check their rules before use! 
 
 Supported Models:
 - Gemini 3 Pro
@@ -27,4 +27,4 @@ You can view the site (live preview) at https://chathackclub.vercel.app (You can
 
 ## Deployment
 
-You can use `npm i` (or pnpm/bun) and then `sudo npm run dev`, to deploy use `vc deploy` (or `vercel deploy`),
+You can use `npm i` (or pnpm/bun) and then `sudo npm run dev`, to deploy use `vc

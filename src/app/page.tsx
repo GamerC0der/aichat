@@ -767,27 +767,32 @@ export default function HomeContent() {
           if (done) break
 
           buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
+          const lines = buffer.split(/\r?\n/)
           buffer = lines.pop() || ""
 
           for (const line of lines) {
-            if (line.startsWith("data: ") && line !== "data: [DONE]") {
-              try {
-                const data = JSON.parse(line.slice(6))
-                const content = data.choices?.[0]?.delta?.content
-                if (content) {
-                  setConversationMessages(prev => ({
-                    ...prev,
-                    [currentConversationId]: prev[currentConversationId].map(m =>
-                      m.id === newAssistantMessageId
-                        ? { ...m, text: m.text + content }
-                        : m
-                    )
-                  }))
-                }
-              } catch (e) {
-                console.error("Error parsing stream:", e)
+            const trimmedLine = line.trim()
+            if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue
+
+            if (trimmedLine === "data: [DONE]") break
+
+            try {
+              const jsonData = trimmedLine.slice(6)
+              const data = JSON.parse(jsonData)
+
+              if (data?.choices?.[0]?.delta?.content) {
+                const content = data.choices[0].delta.content
+                setConversationMessages(prev => ({
+                  ...prev,
+                  [currentConversationId]: prev[currentConversationId].map(m =>
+                    m.id === newAssistantMessageId
+                      ? { ...m, text: m.text + content }
+                      : m
+                  )
+                }))
               }
+            } catch (e) {
+              console.warn("Skipping malformed stream chunk:", trimmedLine, e)
             }
           }
         }
