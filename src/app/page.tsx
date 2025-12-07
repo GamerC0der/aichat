@@ -1032,17 +1032,17 @@ function HomeContent() {
                 <button
                   onClick={createNewConversation}
                   disabled={isLoading}
-                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-6 py-4 bg-gray-700 hover:bg-gray-600 hover:scale-105 active:scale-95 text-white rounded-full text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-gray-600 hover:shadow-lg"
                 >
-                  <Plus size={14} />
+                  <Plus size={28} />
                   New Chat
                 </button>
                 <button
                   onClick={() => router.push(`/coder${selectedModel ? `?model=${encodeURIComponent(selectedModel)}` : ""}`)}
                   disabled={isLoading}
-                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-6 py-4 bg-gray-700 hover:bg-gray-600 hover:scale-105 active:scale-95 text-white rounded-full text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-gray-600 hover:shadow-lg"
                 >
-                  <Code size={14} />
+                  <Code size={28} />
                   Coder
                 </button>
                 <button
@@ -1051,9 +1051,9 @@ function HomeContent() {
                     setIsInitialSetup(false)
                   }}
                   disabled={isLoading}
-                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-6 py-4 bg-gray-700 hover:bg-gray-600 hover:scale-105 active:scale-95 text-white rounded-full text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-gray-600 hover:shadow-lg"
                 >
-                  <Key size={14} />
+                  <Key size={28} />
                   Reset Key
                 </button>
               </div>
@@ -1136,7 +1136,7 @@ function HomeContent() {
                 setMessage("")
                 setIsModalOpen(false)
               }}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 mr-2"
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 hover:scale-105 active:scale-95 text-white rounded-lg transition-all duration-200 border border-red-600 hover:shadow-lg mr-2"
             >
               Clear Chats
             </button>
@@ -1148,7 +1148,7 @@ function HomeContent() {
                 localStorage.setItem("systemPrompt", systemPrompt)
                 setIsModalOpen(false)
               }}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 hover:scale-105 active:scale-95 text-white rounded-lg transition-all duration-200 border border-blue-600 hover:shadow-lg"
             >
               Save
             </button>
@@ -1180,7 +1180,7 @@ function HomeContent() {
         <ModalFooter>
           <button
             onClick={() => setIsCustomModelModalOpen(false)}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mr-2"
+            className="px-6 py-3 bg-gray-500 hover:bg-gray-600 hover:scale-105 active:scale-95 text-white rounded-lg transition-all duration-200 border border-gray-600 hover:shadow-lg mr-2"
           >
             Cancel
           </button>
@@ -1192,7 +1192,7 @@ function HomeContent() {
               }
             }}
             disabled={!customModelId.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 hover:scale-105 active:scale-95 text-white rounded-lg transition-all duration-200 border border-blue-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             Set Model
           </button>
