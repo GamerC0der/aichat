@@ -11,19 +11,25 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, children, className }: ModalProps) {
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
+      isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+    }`}>
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
       {/* Modal content */}
       <div
-        className={`relative z-10 bg-gray-900 text-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4 ${className || ""}`}
+        className={`relative z-10 bg-gray-900 text-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4 transform transition-all duration-300 ${
+          isOpen
+            ? 'opacity-100 scale-100 translate-y-0'
+            : 'opacity-0 scale-95 translate-y-4'
+        } ${className || ""}`}
       >
         <button
           onClick={onClose}
