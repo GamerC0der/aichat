@@ -61,7 +61,6 @@ export default function CoderPage() {
             setSidebarPosition(position)
           }
         } catch (e) {
-          console.error("Error parsing saved sidebar position:", e)
         }
       }
       const savedPlusPosition = localStorage.getItem(`plusPosition_${apiKey}`)
@@ -72,7 +71,6 @@ export default function CoderPage() {
             setPlusPosition(position)
           }
         } catch (e) {
-          console.error("Error parsing saved plus position:", e)
         }
       }
     }
@@ -406,7 +404,7 @@ export default function CoderPage() {
             <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <Select value={selectedModel} onValueChange={(value) => {
+        <Select searchable value={selectedModel} onValueChange={(value) => {
           const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
           setSelectedModel(model)
         }}>

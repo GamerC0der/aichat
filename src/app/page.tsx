@@ -807,7 +807,7 @@ export default function Home() {
         <img src="/favicon.ico" alt="Menu" className="w-12 h-12" />
       </button>
       <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-4'}`}>
-        <Select value={selectedModel} onValueChange={(value) => {
+        <Select searchable value={selectedModel} onValueChange={(value) => {
           if (value === "view-more") {
             setShowAllModels(!showAllModels)
             return
