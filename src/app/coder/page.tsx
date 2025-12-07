@@ -18,7 +18,7 @@ function CoderPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
+  const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }]) 
   const [currentConversationId, setCurrentConversationId] = useState(1)
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)

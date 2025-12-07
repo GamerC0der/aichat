@@ -1,6 +1,6 @@
 # AI Chat
 
-This was made for the final week of hackclub's #siege event! The app uses hackclub's ai api (ai.hackclub.com), trying out the project requires a key. You can login with your hackclub account in order to recieve an api key, please be sure to check their rules before use! 
+This was made for the final week of hackclub's #siege event, over 14 weeks so far! The app uses hackclub's ai api (ai.hackclub.com), trying out the project requires a key. You can login with your hackclub account in order to recieve an api key, please be sure to check their rules before use! 
 
 Supported Models:
 - Gemini 3 Pro
