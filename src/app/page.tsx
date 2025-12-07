@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, Suspense } from "react"
+import React from "react"
 
 declare global {
   interface SpeechRecognition extends EventTarget {
@@ -947,13 +948,24 @@ function HomeContent() {
                         autoFocus
                       />
                     ) : (
-                      <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text || "Thinking...") }} />
+                      <div className="markdown-content">   
+                        {(() => {
+                          const parser = new DOMParser();
+                          const doc = parser.parseFromString(parseMarkdown(msg.text || "Thinking..."), 'text/html');
+                          const convertNode = (node: any): any => {
+                            if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+                            const children: any[] = Array.from(node.childNodes).map(convertNode);
+                            return React.createElement(node.tagName?.toLowerCase() || 'span', { key: Math.random() }, children);
+                          };  
+                          return Array.from(doc.body.childNodes).map(convertNode);
+                        })()}
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-400 mt-2 px-2">
                     <span>{formatTime(msg.id)}</span>
                     {!msg.isUser && msg.text && msg.text !== "Thinking..." && editingMessageId !== msg.id && (
-                      <button
+                      <button 
                         onClick={() => {
                           setEditingMessageId(msg.id)
                           setEditingText(msg.text)
@@ -970,7 +982,7 @@ function HomeContent() {
               ))}
               <div ref={messagesEndRef} />
             </div>
-          </div>
+          </div> ß
         </div>        <div className={`fixed left-0 right-0 flex justify-center ${ (conversationMessages[currentConversationId] || []).length === 0 ? 'top-1/2 -translate-y-1/2' : 'bottom-0 pb-8' }`} style={{ paddingLeft: !isMobile && isSidebarOpen ? '16rem' : '0' }}>
           <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
