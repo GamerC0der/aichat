@@ -11,6 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+type ModelType = "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
+const VALID_MODELS: ModelType[] = ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"]
+
 function CoderPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -22,7 +25,7 @@ function CoderPageContent() {
   const [editTitle, setEditTitle] = useState("")
   const editInputRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
-  const [selectedModel, setSelectedModel] = useState<"Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi">("Gemini")
+  const [selectedModel, setSelectedModel] = useState<ModelType>("Gemini")
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
   const [generatedHtml, setGeneratedHtml] = useState("")
@@ -140,10 +143,14 @@ function CoderPageContent() {
     const savedConversations = localStorage.getItem("conversations")
     const savedSelectedModel = localStorage.getItem("selectedModel")
     const urlModel = searchParams.get("model")
-    if (urlModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(urlModel)) {
-      setSelectedModel(urlModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
-    } else if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(savedSelectedModel)) {
-      setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
+
+    const isValidModel = (model: string | null): model is ModelType =>
+      model !== null && VALID_MODELS.includes(model as ModelType)
+
+    if (isValidModel(urlModel)) {
+      setSelectedModel(urlModel)
+    } else if (isValidModel(savedSelectedModel)) {
+      setSelectedModel(savedSelectedModel)
     }
     const savedApiKey = localStorage.getItem("apiKey")
     if (savedApiKey) {
