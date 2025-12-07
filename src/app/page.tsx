@@ -901,7 +901,6 @@ export default function Home() {
           <div className={`${isMobile ? 'w-full' : 'w-[50%]'} ${isMobile ? 'px-2' : 'px-4'}`}>
             {(conversationMessages[currentConversationId] || []).length === 0 && (
               <>
-                <CheckCircle size={48} className="text-green-500 mx-auto mb-4" />
                 <div className={`text-center text-white ${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>
                   Hi, I'm {selectedModel === "Custom" ? getCustomModelDisplayName(customModelId) : selectedModel}!
                 </div>
