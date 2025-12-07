@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Chat
 
-## Getting Started
+This was made for the final week of hackclub's #siege event! The app uses hackclub's ai api (ai.hackclub.com), trying out the project requires a key. You can login with your hackclub account in order to recieve an api key, please be sure to check their rules before use! 
 
-First, run the development server:
+Supported Models:
+- Gemini 3 Pro
+- Gemini 2.5 Pro
+- GPT 5 Mini
+- Grok 4.1 Fast
+- Kimi K2 0905
+and all other models from https://ai.hackclub.com/dashboard too! (see custom model feature)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Features include:
+- Streaming
+- Chat History (uses localstorage)
+- Custom System Prompts
+- Coder Feature (makes HTML websites)
+& more
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Preview Image
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+![Preview Image](image.png)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Preview Site
 
-## Learn More
+You can view the site (live preview) at https://chathackclub.vercel.app (You can even use ?model= to set the model, try Gemini or Grok!), the live demo still requires a key.
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+You can use `npm i` (or pnpm/bun) and then `sudo npm run dev`, to deploy use `vc deploy` (or `vercel deploy`),
