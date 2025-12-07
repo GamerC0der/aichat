@@ -40,6 +40,45 @@ export default function CoderPage() {
   }, [selectedModel])
 
   useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem(`sidebarPosition_${apiKey}`, JSON.stringify(sidebarPosition))
+    }
+  }, [sidebarPosition, apiKey])
+
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem(`plusPosition_${apiKey}`, JSON.stringify(plusPosition))
+    }
+  }, [plusPosition, apiKey])
+
+  useEffect(() => {
+    if (apiKey) {
+      const savedSidebarPosition = localStorage.getItem(`sidebarPosition_${apiKey}`)
+      if (savedSidebarPosition) {
+        try {
+          const position = JSON.parse(savedSidebarPosition)
+          if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+            setSidebarPosition(position)
+          }
+        } catch (e) {
+          console.error("Error parsing saved sidebar position:", e)
+        }
+      }
+      const savedPlusPosition = localStorage.getItem(`plusPosition_${apiKey}`)
+      if (savedPlusPosition) {
+        try {
+          const position = JSON.parse(savedPlusPosition)
+          if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+            setPlusPosition(position)
+          }
+        } catch (e) {
+          console.error("Error parsing saved plus position:", e)
+        }
+      }
+    }
+  }, [apiKey])
+
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
@@ -98,6 +137,28 @@ export default function CoderPage() {
     const savedApiKey = localStorage.getItem("apiKey")
     if (savedApiKey) {
       setApiKey(savedApiKey)
+      const savedSidebarPosition = localStorage.getItem(`sidebarPosition_${savedApiKey}`)
+      if (savedSidebarPosition) {
+        try {
+          const position = JSON.parse(savedSidebarPosition)
+          if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+            setSidebarPosition(position)
+          }
+        } catch (e) {
+            
+        }
+      }
+      const savedPlusPosition = localStorage.getItem(`plusPosition_${savedApiKey}`)
+      if (savedPlusPosition) {
+        try {
+          const position = JSON.parse(savedPlusPosition)
+          if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+            setPlusPosition(position)
+          }
+        } catch (e) {
+          console.error("Error parsing saved plus position:", e)
+        }
+      }
     }
     if (savedConversations) {
       const parsedConversations = JSON.parse(savedConversations)
