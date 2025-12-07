@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw, CheckCircle } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -931,8 +931,9 @@ export default function Home() {
                 <button
                   onClick={() => router.push("/coder")}
                   disabled={isLoading}
-                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
+                  <Code size={16} />
                   Coder
                 </button>
                 <button
@@ -941,8 +942,9 @@ export default function Home() {
                     setIsInitialSetup(false)
                   }}
                   disabled={isLoading}
-                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
+                  <Key size={16} />
                   Reset Key
                 </button>
               </div>
