@@ -129,6 +129,12 @@ export default function Home() {
   const [showAllModels, setShowAllModels] = useState(false)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    conversationId: number | null;
+  }>({ isOpen: false, x: 0, y: 0, conversationId: null })
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -639,6 +645,52 @@ export default function Home() {
     }
   }
 
+  const closeContextMenu = () => {
+    setContextMenu({ isOpen: false, x: 0, y: 0, conversationId: null })
+  }
+
+  const handleConversationRightClick = (e: React.MouseEvent, conversationId: number) => {
+    e.preventDefault()
+    setContextMenu({
+      isOpen: true,
+      x: e.clientX,
+      y: e.clientY,
+      conversationId
+    })
+  }
+
+  const handleDeleteConversation = (conversationId: number) => {
+    deleteConversation(conversationId)
+    closeContextMenu()
+  }
+
+  const ContextMenu = () => {
+    if (!contextMenu.isOpen) return null
+
+    return (
+      <>
+        <div
+          className="fixed inset-0 z-40"
+          onClick={closeContextMenu}
+        />
+        <div
+          className="fixed z-50 bg-gray-800 border border-gray-600 rounded-md shadow-lg py-1 min-w-[120px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+        >
+          <button
+            onClick={() => contextMenu.conversationId && handleDeleteConversation(contextMenu.conversationId)}
+            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </>
+    )
+  }
+
   return (
     <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
       <aside
@@ -659,6 +711,7 @@ export default function Home() {
                   convo.id === currentConversationId ? 'bg-gray-800 text-white' : ''
                 }`}
                 onClick={() => switchConversation(convo.id)}
+                onContextMenu={(e) => handleConversationRightClick(e, convo.id)}
               >
                 <span className="text-sm truncate block">{convo.title}</span>
               </div>
@@ -955,6 +1008,8 @@ export default function Home() {
           </button>
         </ModalFooter>
       </Modal>
+
+      <ContextMenu />
 
     </div>
   );
