@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal"
 import {
   Select,
@@ -73,6 +73,7 @@ const parseMarkdown = (text: string): string => {
 
 export default function Home() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isInitialSetup, setIsInitialSetup] = useState(false)
   const [apiKey, setApiKey] = useState("sk-hc-v1-")
@@ -85,6 +86,7 @@ export default function Home() {
     const savedMessages = localStorage.getItem("conversationMessages")
     const savedCustomModelId = localStorage.getItem("customModelId")
     const savedSelectedModel = localStorage.getItem("selectedModel")
+    const urlModel = searchParams.get("model")
 
     if (savedKey) {
       setApiKey(savedKey)
@@ -98,7 +100,9 @@ export default function Home() {
     if (savedCustomModelId) {
       setCustomModelId(savedCustomModelId)
     }
-    if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi", "Custom"].includes(savedSelectedModel)) {
+    if (urlModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi", "Custom"].includes(urlModel)) {
+      setSelectedModel(urlModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi" | "Custom")
+    } else if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi", "Custom"].includes(savedSelectedModel)) {
       setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi" | "Custom")
     }
     if (savedConversations) {
@@ -114,7 +118,7 @@ export default function Home() {
     if (savedMessages) {
       setConversationMessages(JSON.parse(savedMessages))
     }
-  }, [])
+  }, [searchParams])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
   const [currentConversationId, setCurrentConversationId] = useState(1)
@@ -150,7 +154,15 @@ export default function Home() {
 
   useEffect(() => {
     localStorage.setItem("selectedModel", selectedModel)
-  }, [selectedModel])
+    const currentParams = new URLSearchParams(window.location.search)
+    if (selectedModel) {
+      currentParams.set("model", selectedModel)
+    } else {
+      currentParams.delete("model")
+    }
+    const newUrl = currentParams.toString() ? `${window.location.pathname}?${currentParams.toString()}` : window.location.pathname
+    router.replace(newUrl, { scroll: false })
+  }, [selectedModel, router])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -848,7 +860,7 @@ export default function Home() {
             {(conversationMessages[currentConversationId] || []).length === 0 && (
               <div className="flex gap-2 mt-2">
                 <button
-                  onClick={() => router.push("/coder")}
+                  onClick={() => router.push(`/coder${selectedModel ? `?model=${encodeURIComponent(selectedModel)}` : ""}`)}
                   disabled={isLoading}
                   className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >

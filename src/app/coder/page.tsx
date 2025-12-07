@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Send, Loader2 } from "lucide-react"
 import {
   Select,
@@ -13,6 +13,7 @@ import {
 
 export default function CoderPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
   const [currentConversationId, setCurrentConversationId] = useState(1)
@@ -38,7 +39,15 @@ export default function CoderPage() {
 
   useEffect(() => {
     localStorage.setItem("selectedModel", selectedModel)
-  }, [selectedModel])
+    const currentParams = new URLSearchParams(window.location.search)
+    if (selectedModel) {
+      currentParams.set("model", selectedModel)
+    } else {
+      currentParams.delete("model")
+    }
+    const newUrl = currentParams.toString() ? `${window.location.pathname}?${currentParams.toString()}` : window.location.pathname
+    router.replace(newUrl, { scroll: false })
+  }, [selectedModel, router])
 
   useEffect(() => {
     if (apiKey) {
@@ -130,7 +139,10 @@ export default function CoderPage() {
   useEffect(() => {
     const savedConversations = localStorage.getItem("conversations")
     const savedSelectedModel = localStorage.getItem("selectedModel")
-    if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(savedSelectedModel)) {
+    const urlModel = searchParams.get("model")
+    if (urlModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(urlModel)) {
+      setSelectedModel(urlModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
+    } else if (savedSelectedModel && ["Gemini", "GPT 5", "Grok", "Gemini 3", "Kimi"].includes(savedSelectedModel)) {
       setSelectedModel(savedSelectedModel as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi")
     }
     const savedApiKey = localStorage.getItem("apiKey")
@@ -169,7 +181,7 @@ export default function CoderPage() {
         setCurrentConversationId(validConversations[0].id)
       }
     }
-  }, [])
+  }, [searchParams])
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
@@ -397,7 +409,7 @@ export default function CoderPage() {
       </button>
       <div className={`fixed top-4 z-10 flex items-center gap-2 ${!isMobile && isSidebarOpen ? 'left-68' : 'left-4'}`}>
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(`/${selectedModel ? `?model=${encodeURIComponent(selectedModel)}` : ""}`)}
           className="w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center justify-center transition-colors"
           title="Go back"
         >
