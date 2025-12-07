@@ -86,7 +86,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key, Send, Mic, MicOff, Plus } from "lucide-react"
+import { Settings, Volume2, Loader2, RefreshCw, CheckCircle, Code, Key, Send, Mic, MicOff, Plus, Edit, Check, X } from "lucide-react"
 
 const parseMarkdown = (text: string): string => {
   if (!text || text === "Thinking...") return text
@@ -211,6 +211,8 @@ function HomeContent() {
   const [isSttRecording, setIsSttRecording] = useState(false)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
+  const [editingText, setEditingText] = useState("")
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     x: number;
@@ -877,7 +879,6 @@ function HomeContent() {
           }
           const model = value as "Gemini" | "GPT 5" | "Grok" | "Gemini 3" | "Kimi"
           setSelectedModel(model)
-          console.log("Model changed to:", model)
         }}>
           <SelectTrigger className={`${isMobile ? 'w-[160px]' : 'w-[220px]'}`}>
             <span className="truncate flex-1 text-left">
@@ -915,22 +916,76 @@ function HomeContent() {
                   <div className={`${isMobile ? 'max-w-[90%]' : 'max-w-[80%]'} px-4 py-3 rounded-lg text-white border ${
                     msg.isUser
                       ? 'rounded-bl-none border-blue-500 bg-gray-800'
-                      : 'rounded-br-none border-gray-600 bg-gray-700'
+                      : editingMessageId === msg.id
+                        ? 'rounded-br-none border-blue-400 bg-gray-700 shadow-lg ring-1 ring-blue-400/50'
+                        : 'rounded-br-none border-gray-600 bg-gray-700 hover:border-gray-500 transition-colors'
                   }`}>
                     {msg.isUser ? (
                       msg.text
+                    ) : editingMessageId === msg.id ? (
+                      <textarea
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        className="w-full bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none border border-blue-400/30 rounded px-2 py-1 focus:border-blue-400/60 transition-colors"
+                        rows={Math.max(3, editingText.split('\n').length)}
+                        autoFocus
+                      />
                     ) : (
                       <div className="markdown-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text || "Thinking...") }} />
                     )}
                   </div>
-                  <div className="flex items-center text-xs text-gray-400 mt-1 px-2">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mt-2 px-2">
                     <span>{formatTime(msg.id)}</span>
                     {!msg.isUser && msg.text && msg.text !== "Thinking..." && (
-                      <>
+                      <div className="flex items-center gap-1">
+                        {editingMessageId !== msg.id ? (
+                          <button
+                            onClick={() => {
+                              setEditingMessageId(msg.id)
+                              setEditingText(msg.text)
+                            }}
+                            disabled={isLoading}
+                            className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                            title="Edit message"
+                          >
+                            <Edit size={14} />
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setConversationMessages(prev => ({
+                                  ...prev,
+                                  [currentConversationId]: prev[currentConversationId].map(m =>
+                                    m.id === msg.id ? { ...m, text: editingText } : m
+                                  )
+                                }))
+                                setEditingMessageId(null)
+                                setEditingText("")
+                              }}
+                              disabled={isLoading}
+                              className="p-1.5 bg-green-600 hover:bg-green-500 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                              title="Save changes"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingMessageId(null)
+                                setEditingText("")
+                              }}
+                              disabled={isLoading}
+                              className="p-1.5 bg-red-600 hover:bg-red-500 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                              title="Cancel editing"
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => regenerateResponse(msg.id)}
                           disabled={isLoading}
-                          className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
                           title="Regenerate response"
                         >
                           <RefreshCw size={14} />
@@ -938,7 +993,7 @@ function HomeContent() {
                         <button
                           onClick={() => speakMessage(msg.text)}
                           disabled={isTtsLoading}
-                          className="ml-2 p-1 hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1.5 hover:bg-gray-600 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
                           title={isTtsLoading ? "Generating speech..." : "Speak message"}
                         >
                           {isTtsLoading ? (
@@ -947,7 +1002,7 @@ function HomeContent() {
                             <Volume2 size={14} />
                           )}
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -978,7 +1033,7 @@ function HomeContent() {
               <button
                 onClick={toggleSpeechRecognition}
                 disabled={isLoading}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 rounded-md hover:scale-105"
                 title={isSttRecording ? "Stop recording" : "Start voice input"}
               >
                 {isSttRecording ? (
@@ -990,7 +1045,7 @@ function HomeContent() {
               <button
                 onClick={sendMessage}
                 disabled={!message.trim() || isLoading}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 rounded-md hover:scale-105"
                 title="Send message"
               >
                 {isLoading ? (
