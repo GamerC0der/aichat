@@ -114,15 +114,10 @@ export default function Home() {
     if (savedMessages) {
       setConversationMessages(JSON.parse(savedMessages))
     }
-    setMenuOpen(null)
   }, [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState([{ id: 1, title: "New Conversation" }])
   const [currentConversationId, setCurrentConversationId] = useState(1)
-  const [menuOpen, setMenuOpen] = useState<number | null>(null)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editTitle, setEditTitle] = useState("")
-  const editInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState("")
   const messageInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -134,11 +129,6 @@ export default function Home() {
   const [showAllModels, setShowAllModels] = useState(false)
   const [isTtsLoading, setIsTtsLoading] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [sidebarPosition, setSidebarPosition] = useState({ x: 0, y: 0 })
-  const [plusPosition, setPlusPosition] = useState({ x: 0, y: 0 })
-  const [settingsPosition, setSettingsPosition] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState<string | null>(null)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     localStorage.setItem("conversations", JSON.stringify(conversations))
@@ -169,48 +159,7 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  const handleMouseDown = (e: React.MouseEvent, element: string) => {
-    e.preventDefault()
-    setIsDragging(element)
-    const rect = (e.target as HTMLElement).getBoundingClientRect()
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    })
-  }
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return
-
-    const newPosition = {
-      x: e.clientX - dragOffset.x,
-      y: e.clientY - dragOffset.y
-    }
-
-    if (isDragging === 'sidebar') {
-      setSidebarPosition(newPosition)
-    } else if (isDragging === 'plus') {
-      setPlusPosition(newPosition)
-    } else if (isDragging === 'settings') {
-      setSettingsPosition(newPosition)
-    }
-  }
-
-  const handleMouseUp = () => {
-    if (!isDragging) return
-    setIsDragging(null)
-  }
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-      }
-    }
-  }, [isDragging, dragOffset])
 
   const getModelId = (model: string) => {
     const modelMap: Record<string, string> = {
@@ -263,33 +212,6 @@ export default function Home() {
     }
   }
 
-  const startEditing = (id: number, title: string) => {
-    setEditingId(id)
-    setEditTitle(title)
-    setMenuOpen(null)
-  }
-
-  useEffect(() => {
-    if (editingId && editInputRef.current) {
-      editInputRef.current.focus()
-      editInputRef.current.select()
-    }
-  }, [editingId])
-
-  const saveEdit = () => {
-    if (editingId) {
-      setConversations(conversations.map(c =>
-        c.id === editingId ? { ...c, title: editTitle } : c
-      ))
-      setEditingId(null)
-      setEditTitle("")
-    }
-  }
-
-  const cancelEdit = () => {
-    setEditingId(null)
-    setEditTitle("")
-  }
 
   const generateTitleFromFirstMessage = async (firstMessage: string) => {
     try {
@@ -720,84 +642,25 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-[rgb(24,24,37)] font-sans dark:bg-black">
       <aside
-        className={`fixed h-full ${isMobile ? 'w-full' : 'w-64'} bg-gray-800 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-30 cursor-move select-none`}
-        style={{
-          left: sidebarPosition.x,
-          top: sidebarPosition.y,
-          position: 'fixed'
-        }}
-        onMouseDown={(e) => handleMouseDown(e, 'sidebar')}
+        className={`fixed h-full ${isMobile ? 'w-full' : 'w-64'} bg-gray-900 border-r border-gray-700 transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-30`}
       >
         <div className="p-4">
-          <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-gray-300 mb-4">
-            <img src="/favicon.ico" alt="Close" className="w-12 h-12" />
-          </button>
-          <div className="space-y-2">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-white text-lg font-medium">Chats</h2>
+            <button onClick={() => setIsSidebarOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+              ✕
+            </button>
+          </div>
+          <div className="space-y-1">
             {conversations.map((convo) => (
-              <div key={convo.id} className="group relative">
-                {editingId === convo.id ? (
-                  <div className="p-3 bg-gray-700 rounded flex items-center justify-between">
-                    <input
-                      ref={editInputRef}
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveEdit()
-                      }}
-                      onBlur={saveEdit}
-                      className="flex-1 bg-transparent text-white outline-none border-none p-0"
-                      placeholder="Conversation title"
-                    />
-                    <button
-                      onClick={saveEdit}
-                      className="-ml-1 p-1 text-green-400 hover:text-green-300"
-                      title="Save"
-                    >
-                      ✓
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className={`p-3 rounded text-white cursor-pointer hover:bg-gray-600 flex items-center justify-between group ${
-                      convo.id === currentConversationId ? 'bg-gray-600' : 'bg-gray-700'
-                    }`}
-                    onClick={() => switchConversation(convo.id)}
-                  >
-                    <span className="flex-1 truncate">{convo.title}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setMenuOpen(menuOpen === convo.id ? null : convo.id)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-600 rounded"
-                    >
-                      ⋮
-                    </button>
-                  </div>
-                )}
-                {menuOpen === convo.id && (
-                  <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg z-10 w-32">
-                    <button
-                      onClick={() => {
-                        startEditing(convo.id, convo.title)
-                        setMenuOpen(null)
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 first:rounded-t last:rounded-b"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        deleteConversation(convo.id)
-                        setMenuOpen(null)
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 first:rounded-t last:rounded-b"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
+              <div
+                key={convo.id}
+                className={`p-3 rounded-md text-gray-300 cursor-pointer hover:bg-gray-800 hover:text-white transition-colors ${
+                  convo.id === currentConversationId ? 'bg-gray-800 text-white' : ''
+                }`}
+                onClick={() => switchConversation(convo.id)}
+              >
+                <span className="text-sm truncate block">{convo.title}</span>
               </div>
             ))}
           </div>
@@ -837,15 +700,15 @@ export default function Home() {
       </div>
       <button
         onClick={createNewConversation}
-        className="fixed z-10 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 cursor-move select-none"
+        className="fixed z-50 w-14 h-14 bg-gray-700 hover:bg-gray-600 text-white rounded-full flex items-center justify-center text-2xl font-bold transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-xl"
         style={{
-          left: plusPosition.x || (isSidebarOpen ? 'calc(100vw - 3rem)' : 'calc(100vw - 3rem)'),
-          top: plusPosition.y || '1rem',
+          left: '1rem',
+          bottom: '2rem',
           position: 'fixed'
         }}
-        onMouseDown={(e) => handleMouseDown(e, 'plus')}
+        title="New Conversation"
       >
-        +
+        <span className="text-white">+</span>
       </button>
       <main className={`flex-1 min-h-screen flex flex-col bg-[rgb(24,24,37)] relative ${!isMobile && isSidebarOpen ? 'ml-64' : ''}`}>
         <div className="flex-1 overflow-y-auto pb-32">
@@ -961,13 +824,12 @@ export default function Home() {
           setIsModalOpen(true)
           setIsInitialSetup(false)
         }}
-        className="fixed w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-full flex items-center justify-center transition-colors z-20 cursor-move select-none"
+        className="fixed w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-full flex items-center justify-center transition-colors z-20"
         style={{
-          left: settingsPosition.x || 'calc(100vw - 3rem)',
-          top: settingsPosition.y || 'calc(100vh - 3rem)',
+          right: '1rem',
+          bottom: '1rem',
           position: 'fixed'
         }}
-        onMouseDown={(e) => handleMouseDown(e, 'settings')}
         title="Settings"
       >
         <Settings size={20} />
